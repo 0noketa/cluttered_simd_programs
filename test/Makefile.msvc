@@ -1,0 +1,252 @@
+ARMVFP_OPTIONS= -march=armv6z+fp -mtune=arm1176jzf-s -mfpu=vfp -mfloat-abi=hard 
+SRC_DIR=../src
+RM=del
+NASM=nasm -felf 
+ISPC=ispc --emit-obj --addressing=32 --arch=x86 --target-os=windows -O3
+ISPC2ASM=ispc --emit-asm --addressing=32 --arch=x86 --target-os=windows -O3
+#NASM=nasm.cmd -felf --prefix _
+CC=cl /MD /std:c17 
+
+
+generic_min_max:
+	$(CC) /O2 /Fegeneric_min_max.exe test_min_max.c $(SRC_DIR)\generic.c
+generic_min_max_omp2:
+	$(CC) /Wall /MT /std:c17 /O2 /favor:blend /arch:AVX2 /openmp /Qpar /Qpar-report:2 /GL /Fegeneric_min_max_omp2.exe test_min_max.c $(SRC_DIR)\generic.c
+generic_min_max_autoomp2:
+	$(CC) /Wall /O2 /favor:blend /arch:AVX2 /openmp /Qpar /Qpar-report:2 /GL /Fegeneric_min_max_autoomp2.exe test_min_max.c $(SRC_DIR)\generic.c
+mmx_min_max:
+	$(CC) /O2 /arch:SSE /Femmx_min_max.exe test_min_max.c $(SRC_DIR)\x86_mmx.c
+	$(CC) /O2 /arch:SSE /DUSE_ANTNOT /Femmx_min_max_2.exe test_min_max.c $(SRC_DIR)\x86_mmx.c
+sse2_min_max:
+	$(CC) /O2 /arch:SSE2 /Fesse2_min_max.exe test_min_max.c $(SRC_DIR)\x86_sse2.c
+	$(CC) /O2 /arch:SSE2 /DUSE_PIPE /Fesse2_min_max_2.exe test_min_max.c $(SRC_DIR)\x86_sse2.c
+ispc_sse2_min_max:
+	$(ISPC) --target=sse4.1-i16x8 -o ispc_i16.obj $(SRC_DIR)/ispc_i16.ispc
+	$(CC) /Os  /arch:AVX2 /Feispc_sse2_min_max.exe test_min_max.c ispc_i16.obj
+avx2_min_max:
+	$(CC) /O2 /arch:AVX2 /Feavx2_min_max.exe test_min_max.c $(SRC_DIR)\x86_avx2.c
+ispc_avx2_min_max:
+	$(ISPC) --target=avx2-i16x16 -o ispc_i16.obj $(SRC_DIR)/ispc_i16.ispc
+	$(CC) /Os  /arch:AVX2 /Feispc_avx2_min_max.exe test_min_max.c ispc_i16.obj
+avx2_min_max_omp2:
+	$(CC) /MT /std:c17 /O2 /arch:AVX2 /openmp /Qpar /Qpar-report:2 /GL /Feavx2_min_max.exe test_min_max.c $(SRC_DIR)\x86_avx2.c
+neon_min_max:
+	$(CC) /O1 -mfpu=neon /Feneon_min_max.exe test_min_max.c $(SRC_DIR)\arm_neon.c
+autovfp_min_max:
+	$(CC) /O2 -march=armv6z+fp -mtune=arm1176jzf-s -mfpu=vfp -mfloat-abi=hard /Feautovfp_min_max.exe test_min_max.c $(SRC_DIR)\arm_autovfp.c
+autoneon_min_max:
+	$(CC) /O2 -mfpu=neon /Feautoneon_min_max.exe test_min_max.c $(SRC_DIR)\generic.c
+
+generic_minmax:
+	$(CC) /O2 /Fegeneric_minmax.exe test_minmax.c $(SRC_DIR)\generic.c
+generic_minmax_omp2:
+	$(CC) /Wall /O2 /arch:AVX2 /openmp /GL /Fegeneric_minmax_omp2.exe test_minmax.c $(SRC_DIR)\generic_omp2.c
+generic_minmax_autoomp2:
+	$(CC) /Wall /O2 /arch:AVX2 /openmp /Qpar /Qpar-report:1 /GL /Fegeneric_minmax_autoomp2.exe test_minmax.c $(SRC_DIR)\generic.c
+mmx_minmax:
+	$(CC) /O2 /arch:SSE /Femmx_minmax.exe test_minmax.c $(SRC_DIR)\x86_mmx.c
+	$(CC) /O2 /arch:SSE /DUSE_ANTNOT /Femmx_minmax_2.exe test_minmax.c $(SRC_DIR)\x86_mmx.c
+sse2_minmax:
+	$(CC) /O2 /arch:SSE2 /Fesse2_minmax.exe test_minmax.c $(SRC_DIR)\x86_sse2.c
+avx2_minmax:
+	$(CC) /O2 /arch:AVX2 /Feavx2_minmax.exe test_minmax.c $(SRC_DIR)\x86_avx2.c
+ispc_avx2_minmax:
+	$(ISPC) --target=avx2-i16x16 -o ispc_i16.obj $(SRC_DIR)/ispc_i16.ispc
+	$(CC) /Os  /arch:AVX2 /Feispc_avx2_minmax.exe test_minmax.c ispc_i16.obj
+neon_minmax:
+	$(CC) /O2 -mfpu=neon /Feneon_minmax.exe test_minmax.c $(SRC_DIR)\arm_neon.c
+autovfp_minmax:
+	$(CC) /O2 -march=armv6z+fp -mtune=arm1176jzf-s -mfpu=vfp -mfloat-abi=hard /Feautovfp_minmax.exe test_minmax.c $(SRC_DIR)\arm_autovfp.c
+autoneon_minmax:
+	$(CC) /O2 -mfpu=neon /Feautoneon_minmax.exe test_minmax.c $(SRC_DIR)\generic.c
+
+generic_min_max8:
+	$(CC) /O2 /Fegeneric_min_max8.exe test_min_max8.c $(SRC_DIR)\generic.c
+generic_min_max8_autoomp2:
+	$(CC) /Wall /O2 /favor:blend /arch:AVX2 /openmp /Qpar /Qpar-report:1 /GL /Fegeneric_min_max8_autoomp2.exe test_min_max.c $(SRC_DIR)\generic.c
+mmx_min_max8:
+	$(CC) /O2 /arch:SSE /Femmx_min_max8.exe test_min_max8.c $(SRC_DIR)\x86_mmx.c
+sse2_min_max8:
+	$(CC) /O2 /arch:SSE2 /Fesse2_min_max8.exe test_min_max8.c $(SRC_DIR)\x86_sse2.c
+avx2_min_max8:
+	$(CC) /O2 /arch:AVX2 /Feavx2_min_max8.exe test_min_max8.c $(SRC_DIR)\x86_avx2.c
+ispc_avx2_min_max8:
+	$(ISPC) --target=avx2-i16x16 -o ispc_i8.obj $(SRC_DIR)/ispc_i8.ispc
+	$(CC) /Os  /arch:AVX2 /Feispc_avx2_min_max8.exe test_min_max8.c ispc_i8.obj
+
+generic_minmax8:
+	$(CC) /O2 /Fegeneric_minmax8.exe test_minmax8.c $(SRC_DIR)\generic.c
+generic_minmax8_autoomp2:
+	$(CC) /Wall /O2 /favor:blend /arch:AVX2 /openmp /Qpar /Qpar-report:1 /GL /Fegeneric_minmax8_autoomp2.exe test_minmax.c $(SRC_DIR)\generic.c
+mmx_minmax8:
+	$(CC) /O2 /arch:SSE /Femmx_minmax8.exe test_minmax8.c $(SRC_DIR)\x86_mmx.c
+sse2_minmax8:
+	$(CC) /O2 /arch:SSE2 /Fesse2_minmax8.exe test_minmax8.c $(SRC_DIR)\x86_sse2.c
+avx2_minmax8:
+	$(CC) /O2 /arch:AVX2 /Feavx2_minmax8.exe test_minmax8.c $(SRC_DIR)\x86_avx2.c
+ispc_avx2_minmax8:
+	$(ISPC) --target=avx2-i16x16 -o ispc_i8.obj $(SRC_DIR)/ispc_i8.ispc
+	$(CC) /Os  /arch:AVX2 /Feispc_avx2_minmax8.exe test_minmax8.c ispc_i8.obj
+
+generic_abs:
+	$(CC) /O2 /Fegeneric_abs.exe test_abs.c $(SRC_DIR)\generic.c
+generic_abs_omp2:
+	$(CC) /Wall /O2 /favor:blend /arch:AVX2 /openmp /GL /Fegeneric_abs_omp2.exe test_abs.c $(SRC_DIR)\generic_omp2.c
+mmx_abs:
+	$(CC) /O2 /arch:SSE /Femmx_abs.exe test_abs.c $(SRC_DIR)\x86_mmx.c
+sse2_abs:
+	$(CC) /O2 /arch:SSE2 /Fesse2_abs.exe test_abs.c $(SRC_DIR)\x86_sse2.c
+
+generic_diff:
+	$(CC) /O2 /Fegeneric_diff.exe test_diff.c $(SRC_DIR)\generic.c
+generic_diff_omp2:
+	$(CC) /Wall /O2 /favor:blend /arch:AVX2 /openmp /GL /Fegeneric_diff_omp2.exe test_diff.c $(SRC_DIR)\generic_omp2.c
+generic_diff_autoomp2:
+	$(CC) /Wall /O2 /favor:blend /arch:AVX2 /openmp /Qpar /Qpar-report:2 /GL /Fegeneric_diff_autoomp2.exe test_diff.c $(SRC_DIR)\generic.c
+mmx_diff:
+	$(CC) /O2 /arch:SSE /Femmx_diff.exe test_diff.c $(SRC_DIR)\x86_mmx.c
+sse2_diff:
+	$(CC) /O2 /arch:SSE2 /Fesse2_diff.exe test_diff.c $(SRC_DIR)\x86_sse2.c
+avx2_diff:
+	$(CC) /O2 /arch:AVX2 /Feavx2_diff.exe test_diff.c $(SRC_DIR)\x86_avx2.c
+
+make_mmx_hw: generic_hw mmx_hw
+make_avx2_hw: generic_hw mmx_hw sse2_hw avx2_hw
+bench_mmx_hw:
+	(time .\generic_hw.exe > /dev\null) 2>&1
+	(time .\generic_hw.exe > /dev\null) 2>&1
+	(time .\generic_hw.exe > /dev\null) 2>&1
+	(time .\mmx_hw.exe > /dev\null) 2>&1
+	(time .\mmx_hw.exe > /dev\null) 2>&1
+	(time .\mmx_hw.exe > /dev\null) 2>&1
+	(time .\mmx_hw_2.exe > /dev\null) 2>&1
+	(time .\mmx_hw_2.exe > /dev\null) 2>&1
+	(time .\mmx_hw_2.exe > /dev\null) 2>&1
+bench_avx2_hw:
+	@echo generic
+	@((time .\generic_hw.exe > /dev\null) 2>&1 | head -n 2)
+	@((time .\generic_hw.exe > /dev\null) 2>&1 | head -n 2)
+	@((time .\generic_hw.exe > /dev\null) 2>&1 | head -n 2)
+	@echo mmx
+	@((time .\mmx_hw.exe > /dev\null) 2>&1 | head -n 2)
+	@((time .\mmx_hw.exe > /dev\null) 2>&1 | head -n 2)
+	@((time .\mmx_hw.exe > /dev\null) 2>&1 | head -n 2)
+	@echo sse2
+	@((time .\sse2_hw.exe > /dev\null) 2>&1 | head -n 2)
+	@((time .\sse2_hw.exe > /dev\null) 2>&1 | head -n 2)
+	@((time .\sse2_hw.exe > /dev\null) 2>&1 | head -n 2)
+	@echo avx2
+	@((time .\avx2_hw.exe > /dev\null) 2>&1 | head -n 2)
+	@((time .\avx2_hw.exe > /dev\null) 2>&1 | head -n 2)
+	@((time .\avx2_hw.exe > /dev\null) 2>&1 | head -n 2)
+	@echo avx2_3
+	@((time .\avx2_hw_3.exe > /dev\null) 2>&1 | head -n 2)
+	@((time .\avx2_hw_3.exe > /dev\null) 2>&1 | head -n 2)
+	@((time .\avx2_hw_3.exe > /dev\null) 2>&1 | head -n 2)
+generic_hw:
+	$(CC) /O2 /Fegeneric_hw.exe test_hw.c $(SRC_DIR)\generic.c
+mmx_hw:
+	$(CC) /O2 /arch:SSE /Femmx_hw.exe test_hw.c $(SRC_DIR)\x86_mmx.c
+sse2_hw:
+	$(CC) /O2 /arch:SSE2 /Fesse2_hw.exe test_hw.c $(SRC_DIR)\x86_sse2.c
+avx2_hw:
+	$(CC) /O2 /arch:AVX2 /Feavx2_hw.exe test_hw.c $(SRC_DIR)\x86_avx2.c
+	$(CC) /O2 /arch:AVX2 /DUSE_POPCNT /Feavx2_hw_3.exe test_hw.c $(SRC_DIR)\x86_avx2.c
+
+generic_rev:
+	$(CC) /O2 /Fegeneric_rev.exe test_rev.c $(SRC_DIR)\generic.c
+x86_rev:
+	$(NASM) $(SRC_DIR)\x86_generic.asm
+	$(CC) /O2 /Fex86_rev.exe test_rev.c $(SRC_DIR)\x86_generic.o
+mmx_rev:
+	$(CC) /O2 /arch:SSE /Femmx_rev.exe test_rev.c $(SRC_DIR)\x86_mmx.c
+x86_3dnow_rev:
+	$(CC) /O2 -m3dnow -march=athlon-xp -mtune=athlon-xp /Fex86_3dnow_rev.exe test_rev.c $(SRC_DIR)\x86_3dnow.c
+sse2_rev:
+	$(CC) /O2 /arch:SSE2 /Fesse2_rev.exe test_rev.c $(SRC_DIR)\x86_sse2.c
+
+generic_rev8:
+	$(CC) /O2 /Fegeneric_rev8.exe test_rev8.c $(SRC_DIR)\generic.c
+x86_rev8:
+	$(NASM) $(SRC_DIR)\x86_generic.asm
+	$(CC) /O2 /Fex86_rev8.exe test_rev8.c $(SRC_DIR)\x86_generic.o
+mmx_rev8:
+	$(CC) /O2 /arch:SSE /Femmx_rev8.exe test_rev8.c $(SRC_DIR)\x86_mmx.c
+x86_3dnow_rev8:
+	$(CC) /O2 -m3dnow -march=athlon-xp -mtune=athlon-xp /Fex86_3dnow_rev8.exe test_rev8.c $(SRC_DIR)\x86_3dnow.c
+sse2_rev8:
+	$(CC) /O2 /arch:SSE2 /Fesse2_rev8.exe test_rev8.c $(SRC_DIR)\x86_sse2.c
+
+generic_rev32:
+	$(CC) /O2 /Fegeneric_rev32.exe test_rev32.c $(SRC_DIR)\generic.c
+x86_rev32:
+	$(NASM) $(SRC_DIR)\x86_generic.asm
+	$(CC) /O2 /Fex86_rev32.exe test_rev32.c $(SRC_DIR)\x86_generic.o
+mmx_rev32:
+	$(CC) /O2 /arch:SSE /Femmx_rev32.exe test_rev32.c $(SRC_DIR)\x86_mmx.c
+x86_3dnow_rev32:
+	$(CC) /O2 -m3dnow -march=athlon-xp -mtune=athlon-xp /Fex86_3dnow_rev32.exe test_rev32.c $(SRC_DIR)\x86_3dnow.c
+sse2_rev32:
+	$(CC) /O2 /arch:SSE2 /Fesse2_rev32.exe test_rev32.c $(SRC_DIR)\x86_sse2.c
+avx2_rev32:
+	$(CC) /O2 /arch:AVX2 /Feavx2_rev32.exe test_rev32.c $(SRC_DIR)\x86_avx2.c
+avx2_nocross_rev32:
+	$(CC) /O2 /arch:AVX2 /DNO_CROSS_FETCH /Feavx2_nocross_rev32.exe test_rev32.c $(SRC_DIR)\x86_avx2.c
+
+generic_shift:
+	$(CC) /O2 /Fegeneric_shift.exe test_shift.c $(SRC_DIR)\generic.c
+mmx_shift:
+	$(CC) /O2 /arch:SSE /Femmx_shift.exe test_shift.c $(SRC_DIR)\x86_mmx.c
+sse2_shift:
+	$(CC) /O2 /arch:SSE2 /Fesse2_shift.exe test_shift.c $(SRC_DIR)\x86_sse2.c
+avx2_shift:
+	$(CC) /O2 /arch:AVX2 /Feavx2_shift.exe test_shift.c $(SRC_DIR)\x86_avx2.c
+
+generic_sort:
+	$(CC) /O2 /Fegeneric_sort.exe test_sort.c $(SRC_DIR)\generic.c
+mmx_sort:
+	$(CC) /O2 /arch:SSE /Femmx_sort.exe test_sort.c $(SRC_DIR)\x86_mmx.c
+sse2_sort:
+	$(CC) /O2 /arch:SSE2 /Fesse2_sort.exe test_sort.c $(SRC_DIR)\x86_sse2.c
+avx2_sort:
+	$(CC) /O2 /arch:AVX2 /Feavx2_sort.exe test_sort.c $(SRC_DIR)\x86_avx2.c
+
+
+generic_hex:
+	$(CC) /O2  /Fegeneric_hex.exe test_hex.c $(SRC_DIR)/generic/hex.c
+generic_hex_omp2:
+	$(CC) /O2 /openmp /Qpar /Fegeneric_hex_omp2.exe test_hex.c $(SRC_DIR)/generic/hex.c
+generic_hex32:
+	$(CC) /O2  /Fegeneric_hex32.exe test_hex.c $(SRC_DIR)/generic/hex_u32.c
+generic_hex32_omp2:
+	$(CC) /O2 /openmp /Qpar /Fegeneric_hex32_omp2.exe test_hex.c $(SRC_DIR)/generic/hex_u32.c
+mmx_hex:
+	$(CC) /O2 /arch:SSE /Femmx_hex.exe test_hex.c $(SRC_DIR)/x86/hex_mmx.c
+mmx_hex_omp2:
+	$(CC) /O2 /openmp /Qpar /arch:SSE /Femmx_hex_omp2.exe test_hex.c $(SRC_DIR)/x86/hex_mmx.c
+ispc_sse2_hex:
+	$(ISPC) --target=sse2-i32x8 -o ispc_hex_u32.obj $(SRC_DIR)/ispc/hex_u32.ispc
+	$(CC) /Os  /arch:SSE2 /Feispc_sse2_hex.exe test_hex.c ispc_hex_u32.obj
+ispc_sse2_hex2:
+	$(ISPC) -DINCREMENTAL_PARSE --target=sse2-i32x8 -o ispc_hex_u32.obj $(SRC_DIR)/ispc/hex_u32.ispc
+	$(CC) /Os  /arch:SSE2 /Feispc_sse2_hex2.exe test_hex.c ispc_hex_u32.obj
+ispc_avx2_hex:
+	$(ISPC) --target=avx2-i32x8 -o ispc_hex_u32.obj $(SRC_DIR)/ispc/hex_u32.ispc
+	$(CC) /Os  /arch:AVX2 /Feispc_avx2_hex.exe test_hex.c ispc_hex_u32.obj
+avx2_hex:
+	$(CC) /O2 /arch:AVX2 /Feavx2_hex.exe test_hex.c $(SRC_DIR)/x86/hex_avx2.c
+avx2_hex.asm:
+	$(CC) /O2 /arch:AVX2 /c /Faavx2_hex.asm $(SRC_DIR)/x86/hex_avx2.c
+avx2_hex_omp2:
+	$(CC) /O2 /arch:AVX2 /openmp /Qpar /Feavx2_hex_omp2.exe test_hex.c $(SRC_DIR)/x86/hex_avx2.c
+avx2_hex_omp2.asm:
+	$(CC) /O2 /arch:AVX2 /openmp /Qpar /Faavx2_hex_omp2.asm /c $(SRC_DIR)/x86/hex_avx2.c
+ispc_avx2_hex2:
+	$(ISPC) -DINCREMENTAL_PARSE --target=avx2-i32x8 -o ispc_hex_u32.obj $(SRC_DIR)/ispc/hex_u32.ispc
+	$(CC) /Os  /arch:AVX2 /Feispc_avx2_hex2.exe test_hex.c ispc_hex_u32.obj
+ispc_hex_u32.s:
+	$(ISPC2ASM) --target=avx2-i32x8 -o ispc_hex_u32.s $(SRC_DIR)/ispc/hex_u32.ispc
+
+
+clean:
+	$(RM) *.exe
