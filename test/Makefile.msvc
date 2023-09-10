@@ -210,6 +210,11 @@ ispc_avx2_hex2:
 ispc_hex_u32.s:
 	$(ISPC2ASM) --target=avx2-i32x8 -o ispc_hex_u32.s $(SRC_DIR)/ispc/hex_u32.ispc
 
+base64:
+	$(CC) /O2  /Fegeneric_base64.exe base64.c $(SRC_DIR)/generic/base64_u32.c
+base64_omp_x4:
+	$(CC) /O2  /openmp /Qpar  /Fegeneric_base64_omp_x4.exe base64.c $(SRC_DIR)/generic/base64_u32.c
+
 
 clean:
 	$(RM) *.exe

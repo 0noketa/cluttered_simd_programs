@@ -1,15 +1,15 @@
-// 181102, 230801
-/* 2018-03-15 */
-// 2023-09-01: 181102(table-based) + 180315(place-holder for simd version + int64 optimization)
+#include <stdint.h>
+#include <stdbool.h>
+#include <string.h>
+#include <stdlib.h>
 
-#include "base64_any.h"
 
 static const char cs[] =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
     "abcdefghijklmnopqrstuvwxyz"
     "0123456789+/"
     "=";
-static const uint8_t cs2[256] = {
+static const uint_fast8_t cs2[256] = {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,62, 0, 0, 0,63,52,53,54,55,56,57,58,59,60,61, 0, 0, 0, 0, 0, 0,
     0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25, 0, 0, 0, 0, 0,
@@ -32,15 +32,15 @@ static int base64_srcbufsize(int size, int *out_chnks)
 
 	return chnks * 3 + rem + 1;
 }
-int base64_any2_enc(uint8_t *dst, const uint8_t *src, size_t len)
+int base64_any2_enc(uint8_t *dst, const uint8_t *src, size_t size)
 {
 	int rem, chnks;
 	int offsetDst, offsetSrc;
 	int ch;
 	register uint64_t q0, q1, q2, q3;
 
-	chnks = len / 6;
-	rem = len - chnks * 6;
+	chnks = size / 6;
+	rem = size - chnks * 6;
 
 	offsetSrc = 0;
 	offsetDst = 0;
@@ -134,20 +134,17 @@ little:
 #endif
 
 #ifndef BASE64_GENERIC_ENC
-int base64_any_enc(
-    uint8_t *dst,
-    const uint8_t *src,
-    size_t len)
+int base64_encode(size_t size, const uint8_t *src, uint8_t *dst)
 {
     if (src == NULL || dst == NULL) return 0;
 
-    size_t blocks = len / 3;
-    size_t rest = len % 3;
+    size_t units = size / 3;
+    size_t rem = size % 3;
 
     const uint8_t *p = src;
     uint8_t *q = dst;
 
-    for (size_t i = 0; i < blocks; ++i)
+    for (size_t i = 0; i < units; ++i)
     {
         uint32_t buf = *p++ << 16;
         buf |= *p++ << 8;
@@ -161,7 +158,7 @@ int base64_any_enc(
 
     // 1 11111111 -> 111111 11____ _ _
     // 2 11111111 22222222 -> 111111 112222 2222__ _
-    if (rest == 1)
+    if (rem == 1)
     {
         uint32_t x = *p;
 
@@ -170,7 +167,7 @@ int base64_any_enc(
         *q++ = '=';
         *q = '=';
     }
-    else if (rest == 2)
+    else if (rem == 2)
     {
         uint32_t x = *p++;
         uint32_t y = *p;
@@ -188,45 +185,76 @@ int base64_any_enc(
 
 
 
-int base64_any_dec(
-    uint8_t *dst,
-    const uint8_t *src,
-    size_t len)
+int base64_decode(size_t input_size, const uint8_t *src, uint8_t *dst, size_t *out_rem)
 {
     if (src == NULL || dst == NULL) return 0;
 
+    size_t units = input_size / 4;
+    units -= (units > 0 && input_size % 4 == 0);
     const uint8_t *p = src;
     uint8_t *q = dst;
 
     uint32_t buf = 0;
-    int j = 0;
 
-    for (size_t i = 0; i < len; ++i)
+    int i;
+    #pragma omp parallel for num_threads(4)
+    for (i = 0; i < units; ++i)
     {
-        int c = *p++;
-        int x = cs2[c];
-        buf <<= 6;
-        buf |= x;
+        int c0 = src[i * 4 + 0];
+        int c1 = src[i * 4 + 1];
+        int c2 = src[i * 4 + 2];
+        int c3 = src[i * 4 + 3];
+        int x0 = cs2[c0];
+        int x1 = cs2[c1];
+        int x2 = cs2[c2];
+        int x3 = cs2[c3];
 
-        if (++j == 4)
+        buf = (x0 << 18) | (x1 << 12) | (x2 << 6) | (x3 << 0);
+
+        dst[i * 3 + 0] = (buf >> 16) & 0xFF;
+        dst[i * 3 + 1] = (buf >> 8) & 0xFF;
+        dst[i * 3 + 2] = (buf >> 0) & 0xFF;
+    }
+
+    size_t result_rem = 0;
+    if (units * 4 < input_size)
+    {
+        buf = 0;
+        size_t i;
+        int rem = 0;
+        for (i = units * 4; i < input_size; ++i)
         {
-            *q++ = (buf >> 16) & 0xFF;
-            *q++ = (buf >> 8) & 0xFF;
-            *q++ = (buf >> 0) & 0xFF;
+            int c = src[i];
+            if (c == '=') break;
 
-            buf = 0;
-            j = 0;
+            int x = cs2[c];
+            buf <<= 6;
+            buf |= x;
+            ++rem;
+        }
+
+        size_t j = units * 3;
+
+        buf <<= (4 - rem) * 6;
+
+        if (rem > 0)
+        {
+            dst[j + 0] = (buf >> 16) & 0xFF;
+            ++result_rem;
+        }
+        if (rem > 1)
+        {
+            dst[j + 1] = (buf >> 8) & 0xFF;
+            ++result_rem;
+        }
+        if (rem > 2)
+        {
+            dst[j + 2] = (buf >> 0) & 0xFF;
+            ++result_rem;
         }
     }
 
-    if (j > 0)
-    {
-        buf <<= 6 * j;
-
-        *q++ = (buf >> 16) & 0xFF;
-        *q++ = (buf >> 8) & 0xFF;
-        *q++ = (buf >> 0) & 0xFF;
-    }
+    if (out_rem) *out_rem = result_rem;
 
     return 1;
 }

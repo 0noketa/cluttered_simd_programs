@@ -17,7 +17,7 @@ int main()
     // for (int i = 0; i < 1; ++i)
     for (int i = 0; i < UINT8_MAX * 4; ++i)
     {
-        base16_128n_decode(DATA_HEX_SIZE, dst, data_hex);
+        base16_128n_decode(DATA_HEX_SIZE, data_hex, dst);
 
         if (memcmp(dst, data_hex_decoded, DATA_HEX_DECODED_SIZE))
         {
@@ -51,7 +51,7 @@ int main()
  * dpcpp_x64_xe_cflags={ all: "-Ofast -fopenmp -fiopenmp -fopenmp-targets=spir64_x86_64 -march=alderlake -mtune=alderlake" },
 
 
-* 2023-09-08  lifebook(Mobile Intel Celeron 500MHz = {cores: 1, thrds: ?})  ddr1(100MHz)  cc=gcc  Linux(32bit)
+* 2023-09-08  lifebook(Mobile Intel Celeron (coppermine) 500MHz = {cores: 1, thrds: ?})  ddr1(100MHz)  cc=gcc  Linux(32bit)
 x86           0m34.62s
 mmx(consts/2)  0m9.81s   28.336%
 * 2023-09-08  eeepc r11cx(Atom N2600 = {cores: 2, thrds: 4})  ddr3(1066MHz)  cc=gcc  Linux(32bit PAE)
