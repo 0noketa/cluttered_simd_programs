@@ -16,7 +16,7 @@ generic_min_max_autoomp2:
 	$(CC) /Wall /O2 /favor:blend /arch:AVX2 /openmp /Qpar /Qpar-report:2 /GL /Fegeneric_min_max_autoomp2.exe test_min_max.c $(SRC_DIR)\generic.c
 mmx_min_max:
 	$(CC) /O2 /arch:SSE /Femmx_min_max.exe test_min_max.c $(SRC_DIR)\x86_mmx.c
-	$(CC) /O2 /arch:SSE /DUSE_ANTNOT /Femmx_min_max_2.exe test_min_max.c $(SRC_DIR)\x86_mmx.c
+	$(CC) /O2 /arch:SSE /DUSE_ANDNOT /Femmx_min_max_2.exe test_min_max.c $(SRC_DIR)\x86_mmx.c
 sse2_min_max:
 	$(CC) /O2 /arch:SSE2 /Fesse2_min_max.exe test_min_max.c $(SRC_DIR)\x86_sse2.c
 	$(CC) /O2 /arch:SSE2 /DUSE_PIPE /Fesse2_min_max_2.exe test_min_max.c $(SRC_DIR)\x86_sse2.c
@@ -45,7 +45,7 @@ generic_minmax_autoomp2:
 	$(CC) /Wall /O2 /arch:AVX2 /openmp /Qpar /Qpar-report:1 /GL /Fegeneric_minmax_autoomp2.exe test_minmax.c $(SRC_DIR)\generic.c
 mmx_minmax:
 	$(CC) /O2 /arch:SSE /Femmx_minmax.exe test_minmax.c $(SRC_DIR)\x86_mmx.c
-	$(CC) /O2 /arch:SSE /DUSE_ANTNOT /Femmx_minmax_2.exe test_minmax.c $(SRC_DIR)\x86_mmx.c
+	$(CC) /O2 /arch:SSE /DUSE_ANDNOT /Femmx_minmax_2.exe test_minmax.c $(SRC_DIR)\x86_mmx.c
 sse2_minmax:
 	$(CC) /O2 /arch:SSE2 /Fesse2_minmax.exe test_minmax.c $(SRC_DIR)\x86_sse2.c
 avx2_minmax:
@@ -110,39 +110,6 @@ sse2_diff:
 avx2_diff:
 	$(CC) /O2 /arch:AVX2 /Feavx2_diff.exe test_diff.c $(SRC_DIR)\x86_avx2.c
 
-make_mmx_hw: generic_hw mmx_hw
-make_avx2_hw: generic_hw mmx_hw sse2_hw avx2_hw
-bench_mmx_hw:
-	(time .\generic_hw.exe > /dev\null) 2>&1
-	(time .\generic_hw.exe > /dev\null) 2>&1
-	(time .\generic_hw.exe > /dev\null) 2>&1
-	(time .\mmx_hw.exe > /dev\null) 2>&1
-	(time .\mmx_hw.exe > /dev\null) 2>&1
-	(time .\mmx_hw.exe > /dev\null) 2>&1
-	(time .\mmx_hw_2.exe > /dev\null) 2>&1
-	(time .\mmx_hw_2.exe > /dev\null) 2>&1
-	(time .\mmx_hw_2.exe > /dev\null) 2>&1
-bench_avx2_hw:
-	@echo generic
-	@((time .\generic_hw.exe > /dev\null) 2>&1 | head -n 2)
-	@((time .\generic_hw.exe > /dev\null) 2>&1 | head -n 2)
-	@((time .\generic_hw.exe > /dev\null) 2>&1 | head -n 2)
-	@echo mmx
-	@((time .\mmx_hw.exe > /dev\null) 2>&1 | head -n 2)
-	@((time .\mmx_hw.exe > /dev\null) 2>&1 | head -n 2)
-	@((time .\mmx_hw.exe > /dev\null) 2>&1 | head -n 2)
-	@echo sse2
-	@((time .\sse2_hw.exe > /dev\null) 2>&1 | head -n 2)
-	@((time .\sse2_hw.exe > /dev\null) 2>&1 | head -n 2)
-	@((time .\sse2_hw.exe > /dev\null) 2>&1 | head -n 2)
-	@echo avx2
-	@((time .\avx2_hw.exe > /dev\null) 2>&1 | head -n 2)
-	@((time .\avx2_hw.exe > /dev\null) 2>&1 | head -n 2)
-	@((time .\avx2_hw.exe > /dev\null) 2>&1 | head -n 2)
-	@echo avx2_3
-	@((time .\avx2_hw_3.exe > /dev\null) 2>&1 | head -n 2)
-	@((time .\avx2_hw_3.exe > /dev\null) 2>&1 | head -n 2)
-	@((time .\avx2_hw_3.exe > /dev\null) 2>&1 | head -n 2)
 generic_hw:
 	$(CC) /O2 /Fegeneric_hw.exe test_hw.c $(SRC_DIR)\generic.c
 mmx_hw:
@@ -235,12 +202,8 @@ ispc_avx2_hex:
 	$(CC) /Os  /arch:AVX2 /Feispc_avx2_hex.exe test_hex.c ispc_hex_u32.obj
 avx2_hex:
 	$(CC) /O2 /arch:AVX2 /Feavx2_hex.exe test_hex.c $(SRC_DIR)/x86/hex_avx2.c
-avx2_hex.asm:
-	$(CC) /O2 /arch:AVX2 /c /Faavx2_hex.asm $(SRC_DIR)/x86/hex_avx2.c
-avx2_hex_omp2:
-	$(CC) /O2 /arch:AVX2 /openmp /Qpar /Feavx2_hex_omp2.exe test_hex.c $(SRC_DIR)/x86/hex_avx2.c
-avx2_hex_omp2.asm:
-	$(CC) /O2 /arch:AVX2 /openmp /Qpar /Faavx2_hex_omp2.asm /c $(SRC_DIR)/x86/hex_avx2.c
+avx2_hex_omp_x4:
+	$(CC) /O2 /arch:AVX2 /openmp /Qpar /Feavx2_hex_omp_x4.exe test_hex.c $(SRC_DIR)/x86/hex_avx2.c
 ispc_avx2_hex2:
 	$(ISPC) -DINCREMENTAL_PARSE --target=avx2-i32x8 -o ispc_hex_u32.obj $(SRC_DIR)/ispc/hex_u32.ispc
 	$(CC) /Os  /arch:AVX2 /Feispc_avx2_hex2.exe test_hex.c ispc_hex_u32.obj

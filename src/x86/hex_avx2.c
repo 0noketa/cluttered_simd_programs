@@ -223,7 +223,7 @@ static bool base16_any_dec(
 }
 
 
-int base16_128n_decode(size_t input_size, uint32_t *dst, const uint32_t *src)
+int base16_128n_decode(size_t input_size, const uint32_t *src, uint32_t *dst)
 {
     size_t units = input_size / sizeof(__m256i);
 
@@ -235,8 +235,8 @@ int base16_128n_decode(size_t input_size, uint32_t *dst, const uint32_t *src)
     #pragma omp parallel for num_threads(4)
     for (i = 0; i < units; ++i)
     {
-        // __m256i src0 = *p++;
-        __m256i src0 = _mm256_load_si256(p++);
+        __m256i src0 = p[i];
+        // __m256i src0 = _mm256_load_si256(&p[i]);
 
         __m256i dst0;
         {
@@ -316,8 +316,8 @@ int base16_128n_decode(size_t input_size, uint32_t *dst, const uint32_t *src)
         dst2_lo = _mm_srli_si128(dst2_lo, 8);
         __m128i dst2 = _mm_or_si128(dst2_hi, dst2_lo);
 
-        // *q++ = dst2;
-        _mm_store_si128(q++, dst2);
+        q[i] = dst2;
+        // _mm_store_si128(&q[i], dst2);
     }
 
     return base16_any_dec((uint8_t*)q, (uint8_t*)p, input_size % sizeof(__m256i));

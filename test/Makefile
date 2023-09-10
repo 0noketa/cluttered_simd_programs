@@ -11,7 +11,7 @@ generic_min_max:
 	$(CC) -Ofast -ogeneric_min_max.exe test_min_max.c $(SRC_DIR)/generic.c
 mmx_min_max:
 	$(CC) -Os -mmmx -ommx_min_max.exe test_min_max.c $(SRC_DIR)/x86_mmx.c
-	$(CC) -Os -mmmx -DUSE_ANTNOT -ommx_min_max_2.exe test_min_max.c $(SRC_DIR)/x86_mmx.c
+	$(CC) -Os -mmmx -DUSE_ANDNOT -ommx_min_max_2.exe test_min_max.c $(SRC_DIR)/x86_mmx.c
 sse2_min_max:
 	$(CC) -Os -msse2 -osse2_min_max.exe test_min_max.c $(SRC_DIR)/x86_sse2.c
 	$(CC) -Os -msse2 -DUSE_PIPE -osse2_min_max_2.exe test_min_max.c $(SRC_DIR)/x86_sse2.c
@@ -31,7 +31,7 @@ generic_minmax:
 	$(CC) -Ofast -ogeneric_minmax.exe test_minmax.c $(SRC_DIR)/generic.c
 mmx_minmax:
 	$(CC) -Os -mmmx -ommx_minmax.exe test_minmax.c $(SRC_DIR)/x86_mmx.c
-	$(CC) -Os -mmmx -DUSE_ANTNOT -ommx_minmax_2.exe test_minmax.c $(SRC_DIR)/x86_mmx.c
+	$(CC) -Os -mmmx -DUSE_ANDNOT -ommx_minmax_2.exe test_minmax.c $(SRC_DIR)/x86_mmx.c
 sse2_minmax:
 	$(CC) -Os -msse2 -osse2_minmax.exe test_minmax.c $(SRC_DIR)/x86_sse2.c
 avx2_minmax:
@@ -80,39 +80,6 @@ sse2_diff:
 avx2_diff:
 	$(CC) -Os -mavx2 -oavx2_diff.exe test_diff.c $(SRC_DIR)/x86_avx2.c
 
-make_mmx_hw: generic_hw mmx_hw
-make_avx2_hw: generic_hw mmx_hw sse2_hw avx2_hw
-bench_mmx_hw:
-	(time ./generic_hw.exe > /dev/null) 2>&1
-	(time ./generic_hw.exe > /dev/null) 2>&1
-	(time ./generic_hw.exe > /dev/null) 2>&1
-	(time ./mmx_hw.exe > /dev/null) 2>&1
-	(time ./mmx_hw.exe > /dev/null) 2>&1
-	(time ./mmx_hw.exe > /dev/null) 2>&1
-	(time ./mmx_hw_2.exe > /dev/null) 2>&1
-	(time ./mmx_hw_2.exe > /dev/null) 2>&1
-	(time ./mmx_hw_2.exe > /dev/null) 2>&1
-bench_avx2_hw:
-	@echo generic
-	@((time ./generic_hw.exe > /dev/null) 2>&1 | head -n 2)
-	@((time ./generic_hw.exe > /dev/null) 2>&1 | head -n 2)
-	@((time ./generic_hw.exe > /dev/null) 2>&1 | head -n 2)
-	@echo mmx
-	@((time ./mmx_hw.exe > /dev/null) 2>&1 | head -n 2)
-	@((time ./mmx_hw.exe > /dev/null) 2>&1 | head -n 2)
-	@((time ./mmx_hw.exe > /dev/null) 2>&1 | head -n 2)
-	@echo sse2
-	@((time ./sse2_hw.exe > /dev/null) 2>&1 | head -n 2)
-	@((time ./sse2_hw.exe > /dev/null) 2>&1 | head -n 2)
-	@((time ./sse2_hw.exe > /dev/null) 2>&1 | head -n 2)
-	@echo avx2
-	@((time ./avx2_hw.exe > /dev/null) 2>&1 | head -n 2)
-	@((time ./avx2_hw.exe > /dev/null) 2>&1 | head -n 2)
-	@((time ./avx2_hw.exe > /dev/null) 2>&1 | head -n 2)
-	@echo avx2_3
-	@((time ./avx2_hw_3.exe > /dev/null) 2>&1 | head -n 2)
-	@((time ./avx2_hw_3.exe > /dev/null) 2>&1 | head -n 2)
-	@((time ./avx2_hw_3.exe > /dev/null) 2>&1 | head -n 2)
 generic_hw:
 	$(CC) -Ofast -ogeneric_hw.exe test_hw.c $(SRC_DIR)/generic.c
 mmx_hw:
@@ -194,6 +161,8 @@ neon_min_max:
 	$(CC) -Ofast -mfpu=neon -oneon_min_max.exe test_min_max.c $(SRC_DIR)/arm_neon.c
 avx2_hex:
 	$(CC) -Ofast -mavx2 -oavx2_hex.exe test_hex.c $(SRC_DIR)/x86/hex_avx2.c
+avx2_hex_omp_x4:
+	$(CC) -Ofast -mavx2 -fopenmp -oavx2_hex_omp_x4.exe test_hex.c $(SRC_DIR)/x86/hex_avx2.c
 dpcpp_hex_omp2_x8:
 	dpcpp -Ofast -fopenmp -fvectorize -vec -odpcpp_hex_omp2x8.exe test_hex.c $(SRC_DIR)/generic/hex.c
 dpcpp_xe_hex:

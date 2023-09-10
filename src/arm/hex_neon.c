@@ -159,7 +159,7 @@ static inline uint16x4_t b16_copy_decoded_block_0(uint8x8_t src) {
 
     return vadd_u16(dst16, dst16_hi);
 }
-uint8x8_t b16_copy_decoded_block(uint8x8_t src, uint8x8_t src2) {
+static inline uint8x8_t b16_copy_decoded_block(uint8x8_t src, uint8x8_t src2) {
     uint16x4_t dst_hi = b16_copy_decoded_block_0(src);
     uint64x1_t dst64_hi = vreinterpret_u64_u16(dst_hi);
     uint16x4_t dst_lo = b16_copy_decoded_block_0(src2);
@@ -180,7 +180,7 @@ uint8x8_t b16_copy_decoded_block(uint8x8_t src, uint8x8_t src2) {
     lower = src4 < 6 ? src4 + 10 : 0;
     */
 }
-uint8x8_t b16_copy_decoded_block_2(uint8x16_t src) {
+static inline uint8x8_t b16_copy_decoded_block_2(uint8x16_t src) {
     src = vsubq_u8(src, diff16_num);
     uint8x16_t dst = vcltq_u8(src, packed_8x16_10);
     dst = vandq_u8(src, dst);
@@ -212,7 +212,7 @@ uint8x8_t b16_copy_decoded_block_2(uint8x16_t src) {
 // input size: 64n bytes
 // output size: 32n bytes, a half of input size
 // size: encoded size in bytes, 64n bytes
-int base16_128n_decode(size_t input_size, uint32_t *dst, const uint32_t *src)
+int base16_128n_decode(size_t input_size, const uint32_t *src, uint32_t *dst)
 {
     // 8n bytes as uint32x8 x 2n per step
     size_t units = input_size / 2 / 4;

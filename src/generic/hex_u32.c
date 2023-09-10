@@ -17,7 +17,7 @@ static uint32_t col2half(uint32_t c)
 // input size: 64n bytes
 // output size: 32n bytes, a half of input size
 // size: encoded size in bytes, 64n bytes
-int base16_128n_decode(size_t input_size, uint32_t *dst, const uint32_t *src)
+int base16_128n_decode(size_t input_size, const uint32_t *src, uint32_t *dst)
 {
     // 8n bytes as uint32x8 x 2n per step
     size_t units = input_size / 2 / 4;

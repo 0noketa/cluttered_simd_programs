@@ -42,7 +42,7 @@ uint32 col2half(uint32 c)
 // input size: 64n bytes
 // output size: 32n bytes, a half of input size
 // size: encoded size in bytes, 64n bytes
-export uniform int base16_128n_decode(uniform target_size_t input_size, uniform uint32 dst[], uniform const uint32 src[])
+export uniform int base16_128n_decode(uniform target_size_t input_size, uniform const uint32 src[], uniform uint32 dst[])
 {
     // 8n bytes as uint32x8 x 2n per step
     uniform target_size_t units = input_size / 4 / TARGET_WIDTH;

@@ -165,7 +165,7 @@ static bool base16_any_dec(
 }
 
 
-int base16_128n_decode(size_t input_size, uint32_t *dst, const uint32_t *src)
+int base16_128n_decode(size_t input_size, const uint32_t *src, uint32_t *dst)
 {
     size_t units = input_size / sizeof(__m64);
 
