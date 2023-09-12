@@ -27,63 +27,20 @@ int base64_24n_encode(size_t size, const uint8_t *src, uint8_t *dst)
 {
     if (src == NULL || dst == NULL) return 0;
 
-    size_t units = size / 12;
-
-    const uint32_t *p = (void*)src;
-    uint32_t *q = (void*)dst;
+    size_t units = size / 3;
 
     int i;
     #pragma omp parallel for num_threads(4)
     for (i = 0; i < units; ++i)
     {
-        uint_fast32_t unit0 = p[i * 3];
-        uint_fast32_t unit1 = p[i * 3 + 1];
-        uint_fast32_t unit2 = p[i * 3 + 2];
+        uint32_t buf = src[i * 3] << 16;
+        buf |= src[i * 3 + 1] << 8;
+        buf |= src[i * 3 + 2];
 
-        uint_fast32_t  c0 = ( unit0/*&0x000000FC*/>>  2) & 0x3F;
-        uint_fast32_t  c1 = ((unit0 & 0x00000003) <<  4) | ((unit0 & 0x0000F000) >> 12);
-        uint_fast32_t  c2 = ((unit0 & 0x00C00000) >> 22) | ((unit0 & 0x00000F00) >>  6);
-        uint_fast32_t  c3 = ((unit0 & 0x003F0000) >> 16);
-
-        uint_fast32_t  c4 = ( unit0/*&0xFC000000*/>> 26);
-        uint_fast32_t  c5 = ((unit0 & 0x03000000) >> 20) | ((unit1 & 0x000000F0) >>  4);
-        uint_fast32_t  c6 = ((unit1 & 0x0000C000) >> 14) | ((unit1 & 0x0000000F) <<  2);
-        uint_fast32_t  c7 = ((unit1 & 0x00003F00) >>  8);
-
-        uint_fast32_t  c8 = ((unit1 & 0x00FC0000) >> 18);
-        uint_fast32_t  c9 = ((unit1 & 0x00030000) >> 12) | ( unit1/*&0xF0000000*/>> 28);
-        uint_fast32_t c10 = ((unit2 & 0x000000C0) >>  6) | ((unit1 & 0x0F000000) >> 22);
-        uint_fast32_t c11 = ((unit2 & 0x0000003F) >>  0);
-
-        uint_fast32_t c12 = ((unit2 & 0x0000FC00) >> 10);
-        uint_fast32_t c13 = ((unit2 & 0x00000300) >>  4) | ((unit2 & 0x00F00000) >> 20);
-        uint_fast32_t c14 = ((unit2 & 0x000F0000) >> 14) | ( unit2/*&0xC0000000*/>> 30);
-        uint_fast32_t c15 = ((unit2 & 0x3F000000) >> 24);
-
-        c0 = cs[c0];
-        c1 = cs[c1];
-        c2 = cs[c2];
-        c3 = cs[c3];
-
-        c4 = cs[c4];
-        c5 = cs[c5];
-        c6 = cs[c6];
-        c7 = cs[c7];
-
-        c8 = cs[c8];
-        c9 = cs[c9];
-        c10 = cs[c10];
-        c11 = cs[c11];
-        
-        c12 = cs[c12];
-        c13 = cs[c13];
-        c14 = cs[c14];
-        c15 = cs[c15];
-
-        q[i * 4 + 0] = (c0 << 0) | (c1 << 8) | (c2 << 16) | (c3 << 24);
-        q[i * 4 + 1] = (c4 << 0) | (c5 << 8) | (c6 << 16) | (c7 << 24);
-        q[i * 4 + 2] = (c8 << 0) | (c9 << 8) | (c10 << 16) | (c11 << 24);
-        q[i * 4 + 3] = (c12 << 0) | (c13 << 8) | (c14 << 16) | (c15 << 24);
+        dst[i * 4 + 0] = cs[(buf >> 18) & 0x3F];
+        dst[i * 4 + 1] = cs[(buf >> 12) & 0x3F];
+        dst[i * 4 + 2] = cs[(buf >> 6) & 0x3F];
+        dst[i * 4 + 3] = cs[(buf >> 0) & 0x3F];
     }
 
     return 1;
@@ -93,23 +50,8 @@ int base64_encode(size_t size, const uint8_t *src, uint8_t *dst)
     if (!base64_24n_encode(size, src, dst)) return 0;
     if (src == NULL || dst == NULL) return 0;
 
-    size_t units0 = size / 12;
-    size_t rem0 = size % 12;
-
-    size_t units = rem0 / 3;
-    size_t rem = rem0 % 3;
-
-    for (size_t i = 0; i < units; ++i)
-    {
-        uint32_t buf = src[units * 12 + i * 3] << 16;
-        buf |= src[units * 12 + i * 3 + 1] << 8;
-        buf |= src[units * 12 + i * 3 + 2];
-
-        dst[units * 16 + i * 4 + 0] = cs[(buf >> 18) & 0x3F];
-        dst[units * 16 + i * 4 + 1] = cs[(buf >> 12) & 0x3F];
-        dst[units * 16 + i * 4 + 2] = cs[(buf >> 6) & 0x3F];
-        dst[units * 16 + i * 4 + 3] = cs[(buf >> 0) & 0x3F];
-    }
+    size_t units = size / 3;
+    size_t rem = size % 3;
 
     // 1 11111111 -> 111111 11____ _ _
     // 2 11111111 22222222 -> 111111 112222 2222__ _

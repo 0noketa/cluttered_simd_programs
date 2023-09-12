@@ -25,7 +25,7 @@ int main(int argc, char *argv[])
         if (input_size == 0) break;
 
         size_t rem;
-        base64_decode(input_size, encoded, decoded, &rem);
+        base64_32n_decode(input_size, encoded, decoded, &rem);
 
         size_t output_size = (input_size / 4 - 1) * 3 + rem;
 

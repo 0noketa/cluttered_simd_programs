@@ -215,6 +215,23 @@ base64:
 base64_omp_x4:
 	$(CC) /O2  /openmp /Qpar  /Fegeneric_base64_omp_x4.exe base64.c $(SRC_DIR)/generic/base64_u32.c
 
+generic_base64e:
+	$(CC) /O2  /Fegeneric_base64e.exe base64e.c $(SRC_DIR)/generic/base64_u32.c
+generic_base64e_omp_x4:
+	$(CC) /O2  /openmp /Qpar  /Fegeneric_base64e_omp_x4.exe base64e.c $(SRC_DIR)/generic/base64_u32.c
+ispc_sse2_base64e:
+	$(ISPC) --target=sse2-i32x4 -o ispc_base64.obj $(SRC_DIR)/ispc/base64.ispc
+	$(CC) /Os  /arch:SSE2 /Feispc_sse2_base64e.exe base64e.c ispc_base64.obj
+ispc_sse2_base64e_x8:
+	$(ISPC) --target=sse2-i32x8 -o ispc_base64_x8.obj $(SRC_DIR)/ispc/base64.ispc
+	$(CC) /Os  /arch:SSE2 /Feispc_sse2_base64e_x8.exe base64e.c ispc_base64_x8.obj
+ispc_avx2_base64e:
+	$(ISPC) --target=avx2-i32x4 -o ispc_base64.obj $(SRC_DIR)/ispc/base64.ispc
+	$(CC) /Os  /arch:AVX2 /Feispc_avx2_base64e.exe base64e.c ispc_base64.obj
+ispc_avx2_base64e_x8:
+	$(ISPC) --target=avx2-i32x8 -o ispc_base64_x8.obj $(SRC_DIR)/ispc/base64.ispc
+	$(CC) /Os  /arch:AVX2 /Feispc_avx2_base64e_x8.exe base64e.c ispc_base64_x8.obj
+
 
 clean:
 	$(RM) *.exe

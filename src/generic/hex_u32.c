@@ -14,21 +14,23 @@ static uint32_t col2half(uint32_t c)
 }
 
 
-// input size: 64n bytes
-// output size: 32n bytes, a half of input size
-// size: encoded size in bytes, 64n bytes
-int base16_128n_decode(size_t input_size, const uint32_t *src, uint32_t *dst)
+// input size: 128n bytes (1024n bits)
+// output size: a half of input size
+int base16_128n_decode(size_t input_size, const uint8_t *src, uint8_t *dst)
 {
     // 8n bytes as uint32x8 x 2n per step
     size_t units = input_size / 2 / 4;
+
+    const uint32_t *p = (void*)src;
+    uint32_t *q = (void*)dst;
 
     // for (size_t i = 0; i < units; ++i)
     int i;
     #pragma omp parallel for num_threads(4)
     for (i = 0; i < units; ++i)
     {
-        uint32_t unit = src[i * 2];
-        uint32_t unit2 = src[i * 2 + 1];
+        uint32_t unit = p[i * 2];
+        uint32_t unit2 = p[i * 2 + 1];
 
         uint32_t c0 = (unit >> 0) & 0xFF;
         uint32_t c1 = (unit >> 8) & 0xFF;
@@ -57,7 +59,7 @@ int base16_128n_decode(size_t input_size, const uint32_t *src, uint32_t *dst)
 
         unit = (c0 << 0) | (c2 << 8) | (c4 << 16) | (c6 << 24);
  
-        dst[i] = unit;
+        q[i] = unit;
     }
 
     return 1;
