@@ -7,8 +7,8 @@
 
 #define BLOCK_SIZE 0xC0000
 
-alignas(32) uint8_t encoded[BLOCK_SIZE * 4 / 3];
-alignas(32) uint8_t decoded[BLOCK_SIZE];
+alignas(32) uint8_t encoded[BLOCK_SIZE * 4 / 3] = {0,};
+alignas(32) uint8_t decoded[BLOCK_SIZE] = {0,};
 
 
 int main(int argc, char *argv[])
@@ -23,7 +23,7 @@ int main(int argc, char *argv[])
         if (input_size == 0) continue;
 
         size_t rem;
-        base64_24n_encode(input_size, decoded, encoded);
+        base64_48n_encode(input_size, decoded, encoded);
 
         size_t output_size = input_size * 4 / 3;
 

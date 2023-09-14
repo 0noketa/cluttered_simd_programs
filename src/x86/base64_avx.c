@@ -1,12 +1,17 @@
-// 181101
-#include "base64_avx.h"
-#include "base64_any.h"
+#include <immintrin.h>
+
+#if defined(__GNUC__)
+#include <x86intrin.h>
+#elif defined(_MSC_VER) 
+#include <intrin.h>
+#endif
 
 #if sizeof(__m128i) != 16 || sizeof(__m256i) != 32
 #error "unexpected padding (align <=16 is required"
 #endif
 
-// 384 bits = loads 3 times = 4 blocks
+
+// 384 bits = loads 3 times = 4 units
 
 // A-a-0-+/
 // 0..:'A'=65, 26..:'a'=97, 52..:'0'=48, 62:'+'=43, 63:'/'=47
@@ -102,35 +107,93 @@ static inline void repack_3to4(
     __m256i *dst0, __m256i *dst1, __m256i *dst2, __m256i *dst3,
     __m128i src0, __m128i src1, __m128i src2);
 
-void base64_enc(
-    BASE64_AVX_ALIGNED uint8_t *dst,
-    const BASE64_AVX_ALIGNED uint8_t *src,
-    size_t len)
+static inline __m128i load_be_u32x4(void *src)
 {
-    if (src == NULL || dst == NULL)
-        return;
+    uint32_t *p = src;
 
-    size_t rest = len % sizeof(__m128i);
-    size_t blocks = len / sizeof(__m128i);
+    union {
+        __m128i packed;
+        uint32_t arr[4];
+    } tmp;
+
+    tmp.arr[0] = _load_be_u32(p + 0);
+    tmp.arr[1] = _load_be_u32(p + 1);
+    tmp.arr[2] = _load_be_u32(p + 2);
+    tmp.arr[3] = _load_be_u32(p + 3);
+
+    return tmp.packed;
+}
+
+static inline __m256i load_be_u32x8(void *src)
+{
+    uint32_t *p = src;
+
+    union {
+        __m256i packed;
+        uint32_t arr[8];
+    } tmp;
+
+    tmp.arr[0] = _load_be_u32(p + 0);
+    tmp.arr[1] = _load_be_u32(p + 1);
+    tmp.arr[2] = _load_be_u32(p + 2);
+    tmp.arr[3] = _load_be_u32(p + 3);
+    tmp.arr[4] = _load_be_u32(p + 4);
+    tmp.arr[5] = _load_be_u32(p + 5);
+    tmp.arr[6] = _load_be_u32(p + 6);
+    tmp.arr[7] = _load_be_u32(p + 7);
+
+    return tmp.packed;
+}
+
+int base64_48n_encode(size_t size, const uint8_t *src, uint8_t *dst)
+{
+    if (src == NULL || dst == NULL) return 0;
+
+    size_t units = len / 48;
 
     __m128i *p = (void*) src;
     __m128i *q = (void*) dst;
 
-    for (size_t i = 0; i < blocks; ++i)
+    for (size_t i = 0; i < units; ++i)
     {
-        __m128i src0_0 = _mm_load(p++);
-        __m128i src1_0 = _mm_load(p++);
-        __m128i src2_0 = _mm_load(p++);
+        __m128i src0 = load_be_u32x4(p + i * 48);
+        __m128i src1 = load_be_u32x4(p + i * 48 + 1);
+        __m128i src2 = load_be_u32x4(p + i * 48 + 2);
 
-        __m256i src0, src1, src2, src3;
+        // a:
+        // 00000011 11112222 22333333 44444455 55556666 66777777 
+        // 88888899 9999aaaa aabbbbbb ccccccdd ddddeeee eeffffff
+        // b:
+        // 00111111 22222233 33334444 44555555 66666677 77778888
+        // 88999999 aaaa____ bbbbcccc ccdddddd eeeeeeff ffff0000
+        // 00111111 22222233 33334444 4455____ 66666677 77778888
+        // 88999999 aaaaaabb bbbbcccc ccdddddd eeeeeeff ffff____
+        // 00111111 22222233 33334444 44555555 66666677 77778888
+        // 88999999 aaaa____ bbbbcccc ccdddddd eeeeeeff ffff0000
+        // 00111111 22222233 33334444 4455____ 66666677 77778888
+        // 88999999 aaaaaabb bbbbcccc ccdddddd eeeeeeff ffff____
+        // c: for 5 & a
 
-        repack_3to4(&src0, &src1, &src2, &src3,
-                src0_0, src1_0, src2_0);
 
-        __m128i dst0 = enc_chunk96(src0);
-        __m128i dst1 = enc_chunk96(src1);
-        __m128i dst2 = enc_chunk96(src2);
-        __m128i dst3 = enc_chunk96(src3);
+        // f _ c b|_ 8 7 _|4 3 _ 0|f _ c b|_ 8 7 _|4 3 _ 0
+        __m128i bit_shifter_0a = _mm_set_epi8(0,0,2,0, 0,2,0,0, 2,0,0,2,    0,0,2,0);
+        __m128i bit_shifter_1a = _mm_set_epi8(0,2,0,0, 2,0,0,2,    0,0,2,0, 0,2,0,0);
+        __m128i bit_shifter_2a = _mm_set_epi8(2,0,0,2,    0,0,2,0, 0,2,0,0, 2,0,0,2);
+        // _ e d _|a 9 _ 6|5 _ 2 1|_ e d _|a 9 _ 6|5 _ 2 1
+        __m128i bit_shifter_0b = _mm_set_epi8(0,2,0,0, 2,0,0,2, 0,0,2,0,    0,2,0,0);
+        __m128i bit_shifter_1b = _mm_set_epi8(2,0,0,2, 0,0,2,0,    0,2,0,0, 2,0,0,2);
+        __m128i bit_shifter_2b = _mm_set_epi8(0,0,2,0,    0,2,0,0, 2,0,0,2, 0,0,2,0);
+
+        __m128i src0b = _mm_slli_epi64(src0, 4);
+        __m128i src1b = _mm_slli_epi64(src1, 4);
+        __m128i src2b = _mm_slli_epi64(src2, 4);
+
+        src0 = _mm_srl_epi8(src0, bit_shifter_0a);
+        src1 = _mm_srl_epi8(src1, bit_shifter_1a);
+        src2 = _mm_srl_epi8(src2, bit_shifter_2a);
+        src0b = _mm_srl_epi8(src0b, bit_shifter_0b);
+        src1b = _mm_srl_epi8(src1b, bit_shifter_1b);
+        src2b = _mm_srl_epi8(src2b, bit_shifter_2b);
 
         _mm_store(q++, dst0);
         _mm_store(q++, dst1);
@@ -141,7 +204,7 @@ void base64_enc(
     if (rest == 0)
         return;
 
-    size_t offset = blocks * BASE64_BLOCK_SIZE;
+    size_t offset = units * BASE64_BLOCK_SIZE;
     size_t rest2 = rest % 3;
     size_t chunks = rest / 3;
     uint32_t buf = 0;

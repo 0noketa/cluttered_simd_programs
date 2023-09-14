@@ -1,39 +1,32 @@
-// 181104
-// based on generic version
+#include <stdint.h>
 #include <immintrin.h>
-#include "base64_avx_2.h"
-
-#define INPUT_BLOCK_SIZE 48
 
 
-static inline __m256i enc(__m256i src);
+static inline __m256i encode_bytes(__m256i src);
 static inline __m256i little_to_big_epu32(__m256i src);
 
 
-void base64_avx_2_enc(
-    BASE64_AVX_2_ALIGNED uint8_t *dst,
-    const BASE64_AVX_2_ALIGNED uint8_t *src,
-    size_t len)
+int base64_48n_encode(size_t size, const uint8_t *src, uint8_t *dst)
 {
-    if (src == NULL || dst == NULL)
-        return;
+    if (src == NULL || dst == NULL) return 0;
 
-    size_t blocks = len / INPUT_BLOCK_SIZE;
-    size_t rest = len % INPUT_BLOCK_SIZE;
+    size_t units = size / 48;
 
     const __m128i *p = (void*) src;
     __m256i *q = (void*) dst;
 
-    for (size_t i = 0; i < blocks; ++i)
+    int i;
+    #pragma omp parallel for num_threads(4)
+    for (i = 0; i < units; ++i)
     {
-        __m128i src0_0 = *p++;
-        __m128i src0_1 = *p++;
-        __m128i src0_2 = *p++;
+        __m128i src0_0 = p[i * 3];
+        __m128i src0_1 = p[i * 3 + 1];
+        __m128i src0_2 = p[i * 3 + 2];
 
-        // rewrite. or optimizer can do? 
-        uint8_t *p0 = src0_0.m128i_u8;
-        uint8_t *p1 = src0_1.m128i_u8;
-        uint8_t *p2 = src0_2.m128i_u8;
+        // rewrite. or optimizer can do?
+        uint8_t *p0 = (void*)&src0_0;
+        uint8_t *p1 = (void*)&src0_1;
+        uint8_t *p2 = (void*)&src0_2;
 /**/
         __m256i src1_0_0 = _mm256_set_epi32( p1[ 5], p1[ 2], p0[15], p0[12],  p0[ 9], p0[ 6], p0[ 3], p0[ 0] );
         __m256i src1_0_1 = _mm256_set_epi32( p1[ 6], p1[ 3], p1[ 0], p0[13],  p0[10], p0[ 7], p0[ 4], p0[ 1] );
@@ -64,26 +57,20 @@ void base64_avx_2_enc(
         __m256i src2_1 = _mm256_or_si256(src2_1_0, src2_1_1);
         src2_1 = _mm256_or_si256(src2_1, src2_1_2);
 
-        __m256i dst0_0 = enc(src2_0);
-        __m256i dst0_1 = enc(src2_1);
+        __m256i dst0_0 = encode_bytes(src2_0);
+        __m256i dst0_1 = encode_bytes(src2_1);
 
         __m256i dst_0 = little_to_big_epu32(dst0_0);
         __m256i dst_1 = little_to_big_epu32(dst0_1);
 
-        *q++ = dst_0;
-        *q++ = dst_1;
+        q[i * 2] = dst_0;
+        q[i * 2 + 1] = dst_1;
     }
 
-    if (0 < rest)
-    {
-        uint8_t *p2 = (void*) p;
-        uint8_t *q2 = (void*) q;
-
-        base64_any_enc(q2, p2, rest);
-    }
+    return 1;
 }
 
-static inline __m256i enc(__m256i src)
+static inline __m256i encode_bytes(__m256i src)
 {
     // dst0 = [int6(>>18), int6(>>12), int6(>>6), int6(>>0)
     __m256i src0_0 = src;
@@ -164,7 +151,7 @@ static inline __m256i enc(__m256i src)
     static const __m256i seq_ff = { .m256i_u64 = {
             UINT64_MAX, UINT64_MAX,
             UINT64_MAX, UINT64_MAX}};
-    
+
     __m256i mask_up = _mm256_cmpgt_epi8(filter_up, dst0);
     __m256i mask_not_up = _mm256_xor_si256(mask_up, seq_ff);
     __m256i mask_lo = _mm256_cmpgt_epi8(filter_lo, dst0);
@@ -225,11 +212,11 @@ static inline __m256i little_to_big_epu32(__m256i src)
     return _mm256_or_si256(dst_hi, dst_lo);
 }
 
-bool base64_avx_2_dec(
-    BASE64_AVX_2_ALIGNED uint8_t *dst,
-    const BASE64_AVX_2_ALIGNED uint8_t *src,
-    size_t len)
-{
-    return base64_any_dec(dst, src, len);
-}
+// bool base64_avx_2_dec(
+//     BASE64_AVX_2_ALIGNED uint8_t *dst,
+//     const BASE64_AVX_2_ALIGNED uint8_t *src,
+//     size_t size)
+// {
+//     return base64_any_dec(dst, src, size);
+// }
 

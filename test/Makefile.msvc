@@ -219,6 +219,16 @@ generic_base64e:
 	$(CC) /O2  /Fegeneric_base64e.exe base64e.c $(SRC_DIR)/generic/base64_u32.c
 generic_base64e_omp_x4:
 	$(CC) /O2  /openmp /Qpar  /Fegeneric_base64e_omp_x4.exe base64e.c $(SRC_DIR)/generic/base64_u32.c
+movbe_base64e:
+	$(CC) /O2  /arch:AVX2 /Femovbe_base64e.exe base64e.c $(SRC_DIR)/generic/base64_u32.c
+movbe_base64e_omp_x4:
+	$(CC) /O2  /arch:AVX2 /openmp /Qpar  /Femovbe_base64e_omp_x4.exe base64e.c $(SRC_DIR)/generic/base64_u32.c
+mmx_base64e:
+	$(CC) /O2 /Wall /arch:SSE  /Femmx_base64e.exe base64e.c $(SRC_DIR)/x86/base64_mmx.c
+avx2_base64e:
+	$(CC) /O2  /arch:AVX2  /Feavx2_base64e.exe base64e.c $(SRC_DIR)/x86/base64_avx_2.c
+avx2_base64e_omp_x4:
+	$(CC) /O2  /arch:AVX2 /openmp /Qpar  /Feavx2_base64e_omp_x4.exe base64e.c $(SRC_DIR)/x86/base64_avx_2.c
 ispc_sse2_base64e:
 	$(ISPC) --target=sse2-i32x4 -o ispc_base64.obj $(SRC_DIR)/ispc/base64.ispc
 	$(CC) /Os  /arch:SSE2 /Feispc_sse2_base64e.exe base64e.c ispc_base64.obj

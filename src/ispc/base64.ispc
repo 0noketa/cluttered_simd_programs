@@ -113,7 +113,7 @@ export uniform int base64_24n_encode(uniform target_size_t input_size, uniform u
 
             cs0[j * 4 + 3] = ((unit2 & 0x0000FC00) >> 10);
             cs1[j * 4 + 3] = ((unit2 & 0x00000300) >>  4) | ((unit2 & 0x00F00000) >> 20);
-            cs2[j * 4 + 3] = ((unit2 & 0x000F0000) >> 14) | ( unit2/*&0xC0000000*/>> 30);
+            cs2[j * 4 + 3] = ( unit2/*&0xC0000000*/>> 30) | ((unit2 & 0x000F0000) >> 14);
             cs3[j * 4 + 3] = ((unit2 & 0x3F000000) >> 24);
         }
 

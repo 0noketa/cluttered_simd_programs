@@ -157,8 +157,6 @@ mmx_hex:
 	$(CC) -Ofast -mmmx -ommx_hex.exe test_hex.c $(SRC_DIR)/x86/hex_mmx.c
 neon_hex:
 	$(CC) -Ofast -mfpu=neon -oneon_hex.exe test_hex.c $(SRC_DIR)/arm/hex_neon.c
-neon_min_max:
-	$(CC) -Ofast -mfpu=neon -oneon_min_max.exe test_min_max.c $(SRC_DIR)/arm_neon.c
 avx2_hex:
 	$(CC) -Ofast -mavx2 -oavx2_hex.exe test_hex.c $(SRC_DIR)/x86/hex_avx2.c
 avx2_hex_omp_x4:
@@ -167,6 +165,19 @@ dpcpp_hex_omp2_x8:
 	dpcpp -Ofast -fopenmp -fvectorize -vec -odpcpp_hex_omp2x8.exe test_hex.c $(SRC_DIR)/generic/hex.c
 dpcpp_xe_hex:
 	dpcpp -Ofast -fopenmp -fiopenmp -fopenmp-targets=spir64_x86_64 -march=alderlake -mtune=alderlake -odpcpp_xe_hex.exe test_hex.c $(SRC_DIR)/generic/hex.c
+
+generic_base64e:
+	$(CC) -Ofast  -ogeneric_base64e.exe base64e.c $(SRC_DIR)/generic/base64_u32.c
+generic_base64e_omp_x4:
+	$(CC) -Ofast  -fopenmp  -ogeneric_base64e_omp_x4.exe base64e.c $(SRC_DIR)/generic/base64_u32.c
+movbe_base64e:
+	$(CC) -Ofast  -mavx2 -mmovbe -omovbe_base64e.exe base64e.c $(SRC_DIR)/generic/base64_u32.c
+movbe_base64e_omp_x4:
+	$(CC) -Ofast  -mavx2 -mmovbe -fopenmp  -omovbe_base64e_omp_x4.exe base64e.c $(SRC_DIR)/generic/base64_u32.c
+mmx_base64e:
+	$(CC) -Ofast  -mmmx  -ommx_base64e.exe base64e.c $(SRC_DIR)/x86/base64_mmx.c
+avx2_base64e:
+	$(CC) -Ofast  -mavx2  -oavx2_base64e.exe base64e.c $(SRC_DIR)/x86/base64_avx_2.c
 
 
 clean:

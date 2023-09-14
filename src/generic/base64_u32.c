@@ -23,7 +23,7 @@ static const uint_fast8_t cs2[256] = {
 
 
 
-int base64_24n_encode(size_t size, const uint8_t *src, uint8_t *dst)
+int base64_12n_encode(size_t size, const uint8_t *src, uint8_t *dst)
 {
     if (src == NULL || dst == NULL) return 0;
 
@@ -36,10 +36,23 @@ int base64_24n_encode(size_t size, const uint8_t *src, uint8_t *dst)
     #pragma omp parallel for num_threads(4)
     for (i = 0; i < units; ++i)
     {
+#ifdef __AVX2__
+#   ifdef _MSC_VER
+        uint_fast32_t unit0 = _load_be_u32(p + i * 3);
+        uint_fast32_t unit1 = _load_be_u32(p + i * 3 + 1);
+        uint_fast32_t unit2 = _load_be_u32(p + i * 3 + 2);
+#   else
+        uint_fast32_t unit0 = __builtin_bswap32(p[i * 3]);
+        uint_fast32_t unit1 = __builtin_bswap32(p[i * 3 + 1]);
+        uint_fast32_t unit2 = __builtin_bswap32(p[i * 3 + 2]);
+#   endif
+#else
         uint_fast32_t unit0 = p[i * 3];
         uint_fast32_t unit1 = p[i * 3 + 1];
         uint_fast32_t unit2 = p[i * 3 + 2];
+#endif
 
+#if _BYTE_ORDER == _LITTLE_ENDIAN && !defined(__AVX2__)
         uint_fast32_t  c0 = ( unit0/*&0x000000FC*/>>  2) & 0x3F;
         uint_fast32_t  c1 = ((unit0 & 0x00000003) <<  4) | ((unit0 & 0x0000F000) >> 12);
         uint_fast32_t  c2 = ((unit0 & 0x00C00000) >> 22) | ((unit0 & 0x00000F00) >>  6);
@@ -57,8 +70,29 @@ int base64_24n_encode(size_t size, const uint8_t *src, uint8_t *dst)
 
         uint_fast32_t c12 = ((unit2 & 0x0000FC00) >> 10);
         uint_fast32_t c13 = ((unit2 & 0x00000300) >>  4) | ((unit2 & 0x00F00000) >> 20);
-        uint_fast32_t c14 = ((unit2 & 0x000F0000) >> 14) | ( unit2/*&0xC0000000*/>> 30);
+        uint_fast32_t c14 = ( unit2/*&0xC0000000*/>> 30) | ((unit2 & 0x000F0000) >> 14);
         uint_fast32_t c15 = ((unit2 & 0x3F000000) >> 24);
+#else
+        uint_fast32_t  c0 = (unit0 >> 26) & 0x3F;
+        uint_fast32_t  c1 = (unit0 >> 20) & 0x3F;
+        uint_fast32_t  c2 = (unit0 >> 14) & 0x3F;
+        uint_fast32_t  c3 = (unit0 >>  8) & 0x3F;
+
+        uint_fast32_t  c4 = (unit0 >>  2) & 0x3F;
+        uint_fast32_t  c5 = ((unit0 <<  4) | (unit1 >> 28)) & 0x3F;
+        uint_fast32_t  c6 = (unit1 >> 22) & 0x3F;
+        uint_fast32_t  c7 = (unit1 >> 16) & 0x3F;
+
+        uint_fast32_t  c8 = (unit1 >> 10) & 0x3F;
+        uint_fast32_t  c9 = (unit1 >> 4) & 0x3F;
+        uint_fast32_t c10 = ((unit1 <<  2) | (unit2 >> 30)) & 0x3F;
+        uint_fast32_t c11 = (unit2 >> 24) & 0x3F;
+
+        uint_fast32_t c12 = (unit2 >> 18) & 0x3F;
+        uint_fast32_t c13 = (unit2 >> 12) & 0x3F;
+        uint_fast32_t c14 = (unit2 >>  6) & 0x3F;
+        uint_fast32_t c15 = (unit2 >>  0) & 0x3F;
+#endif
 
         c0 = cs[c0];
         c1 = cs[c1];
@@ -80,57 +114,74 @@ int base64_24n_encode(size_t size, const uint8_t *src, uint8_t *dst)
         c14 = cs[c14];
         c15 = cs[c15];
 
+#if _BYTE_ORDER == _LITTLE_ENDIAN
         q[i * 4 + 0] = (c0 << 0) | (c1 << 8) | (c2 << 16) | (c3 << 24);
         q[i * 4 + 1] = (c4 << 0) | (c5 << 8) | (c6 << 16) | (c7 << 24);
         q[i * 4 + 2] = (c8 << 0) | (c9 << 8) | (c10 << 16) | (c11 << 24);
         q[i * 4 + 3] = (c12 << 0) | (c13 << 8) | (c14 << 16) | (c15 << 24);
+#else
+        q[i * 4 + 0] = (c0 << 24) | (c1 << 16) | (c2 << 8) | (c3 << 0);
+        q[i * 4 + 1] = (c4 << 24) | (c5 << 16) | (c6 << 8) | (c7 << 0);
+        q[i * 4 + 2] = (c8 << 24) | (c9 << 16) | (c10 << 8) | (c11 << 0);
+        q[i * 4 + 3] = (c12 << 24) | (c13 << 16) | (c14 << 8) | (c15 << 0);
+#endif
     }
 
     return 1;
 }
+int base64_24n_encode(size_t size, const uint8_t *src, uint8_t *dst)
+{
+    return base64_12n_encode(size - size % 24, src, dst);
+}
+int base64_48n_encode(size_t size, const uint8_t *src, uint8_t *dst)
+{
+    return base64_24n_encode(size - size % 48, src, dst);
+}
 int base64_encode(size_t size, const uint8_t *src, uint8_t *dst)
 {
-    if (!base64_24n_encode(size, src, dst)) return 0;
+    if (!base64_12n_encode(size, src, dst)) return 0;
     if (src == NULL || dst == NULL) return 0;
 
     size_t units0 = size / 12;
     size_t rem0 = size % 12;
 
+    size_t src_base = units0 * 12:
+    size_t dst_base = units0 * 16:
     size_t units = rem0 / 3;
     size_t rem = rem0 % 3;
 
     for (size_t i = 0; i < units; ++i)
     {
-        uint32_t buf = src[units * 12 + i * 3] << 16;
-        buf |= src[units * 12 + i * 3 + 1] << 8;
-        buf |= src[units * 12 + i * 3 + 2];
+        uint32_t buf = src[src_base + i * 3] << 16;
+        buf |= src[src_base + i * 3 + 1] << 8;
+        buf |= src[src_base + i * 3 + 2];
 
-        dst[units * 16 + i * 4 + 0] = cs[(buf >> 18) & 0x3F];
-        dst[units * 16 + i * 4 + 1] = cs[(buf >> 12) & 0x3F];
-        dst[units * 16 + i * 4 + 2] = cs[(buf >> 6) & 0x3F];
-        dst[units * 16 + i * 4 + 3] = cs[(buf >> 0) & 0x3F];
+        dst[dst_base + i * 4 + 0] = cs[(buf >> 18) & 0x3F];
+        dst[dst_base + i * 4 + 1] = cs[(buf >> 12) & 0x3F];
+        dst[dst_base + i * 4 + 2] = cs[(buf >> 6) & 0x3F];
+        dst[dst_base + i * 4 + 3] = cs[(buf >> 0) & 0x3F];
     }
 
     // 1 11111111 -> 111111 11____ _ _
     // 2 11111111 22222222 -> 111111 112222 2222__ _
     if (rem == 1)
     {
-        uint_fast32_t x = src[units * 3];
+        uint_fast32_t x = src[src_base + units * 3];
 
-        dst[units * 4 + 0] = cs[x >> 2];
-        dst[units * 4 + 1] = cs[(x << 4) & 0x30];
-        dst[units * 4 + 2] = '=';
-        dst[units * 4 + 3] = '=';
+        dst[dst_base + units * 4 + 0] = cs[x >> 2];
+        dst[dst_base + units * 4 + 1] = cs[(x << 4) & 0x30];
+        dst[dst_base + units * 4 + 2] = '=';
+        dst[dst_base + units * 4 + 3] = '=';
     }
     else if (rem == 2)
     {
-        uint_fast32_t x = src[units * 3];
-        uint_fast32_t y = src[units * 3 + 1];
+        uint_fast32_t x = src[src_base + units * 3];
+        uint_fast32_t y = src[src_base + units * 3 + 1];
 
-        dst[units * 4 + 0] = cs[x >> 2];
-        dst[units * 4 + 0] = cs[((x << 4) | (y >> 4)) & 0x3F];
-        dst[units * 4 + 0] = cs[(y << 2) & 0x3C];
-        dst[units * 4 + 0] = '=';
+        dst[dst_base + units * 4 + 0] = cs[x >> 2];
+        dst[dst_base + units * 4 + 0] = cs[((x << 4) | (y >> 4)) & 0x3F];
+        dst[dst_base + units * 4 + 0] = cs[(y << 2) & 0x3C];
+        dst[dst_base + units * 4 + 0] = '=';
     }
 
     return 1;

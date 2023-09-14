@@ -12,10 +12,6 @@
 #endif
 
 
-#define base16_avx_enc base16_avx2_enc
-#define base16_avx_dec base16_avx2_dec
-
-
 static inline __m64 tochars(__m64 src, __m64 diff_a);
 
 
