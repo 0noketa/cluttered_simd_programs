@@ -73,7 +73,7 @@ int base64_12n_encode(size_t size, const uint8_t *src, uint8_t *dst)
         uint_fast32_t c14 = ( unit2/*&0xC0000000*/>> 30) | ((unit2 & 0x000F0000) >> 14);
         uint_fast32_t c15 = ((unit2 & 0x3F000000) >> 24);
 #else
-        uint_fast32_t  c0 = (unit0 >> 26) & 0x3F;
+        uint_fast32_t  c0 = (unit0 >> 26);
         uint_fast32_t  c1 = (unit0 >> 20) & 0x3F;
         uint_fast32_t  c2 = (unit0 >> 14) & 0x3F;
         uint_fast32_t  c3 = (unit0 >>  8) & 0x3F;
@@ -145,8 +145,8 @@ int base64_encode(size_t size, const uint8_t *src, uint8_t *dst)
     size_t units0 = size / 12;
     size_t rem0 = size % 12;
 
-    size_t src_base = units0 * 12:
-    size_t dst_base = units0 * 16:
+    size_t src_base = units0 * 12;
+    size_t dst_base = units0 * 16;
     size_t units = rem0 / 3;
     size_t rem = rem0 % 3;
 
