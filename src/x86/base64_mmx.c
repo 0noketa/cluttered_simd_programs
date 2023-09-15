@@ -1,7 +1,15 @@
+// 2023-09-08
+#include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
-#include <string.h>
-#include <stdlib.h>
+#include <ctype.h>
+#include <mmintrin.h>
+
+#ifdef __3dNOW__
+#define ANY_EMMS _m_femms
+#else
+#define ANY_EMMS _m_empty
+#endif
 
 
 static const char cs[] =
@@ -21,6 +29,10 @@ static const uint_fast8_t cs2[256] = {
 };
 
 
+// static inline __m64 encode_bytes(__m64 src)
+// {
+
+// }
 
 
 int base64_12n_encode(size_t size, const uint8_t *src, uint8_t *dst)
@@ -32,101 +44,104 @@ int base64_12n_encode(size_t size, const uint8_t *src, uint8_t *dst)
     const uint32_t *p = (void*)src;
     uint32_t *q = (void*)dst;
 
-    int i;
-    #pragma omp parallel for num_threads(4)
-    for (i = 0; i < units; ++i)
+    for (size_t i = 0; i < units; ++i)
     {
-#ifdef __AVX2__
-#   ifdef _MSC_VER
-        uint_fast32_t unit0 = _load_be_u32(p + i * 3);
-        uint_fast32_t unit1 = _load_be_u32(p + i * 3 + 1);
-        uint_fast32_t unit2 = _load_be_u32(p + i * 3 + 2);
-#   else
-        uint_fast32_t unit0 = __builtin_bswap32(p[i * 3]);
-        uint_fast32_t unit1 = __builtin_bswap32(p[i * 3 + 1]);
-        uint_fast32_t unit2 = __builtin_bswap32(p[i * 3 + 2]);
-#   endif
-#else
         uint_fast32_t unit0 = p[i * 3];
         uint_fast32_t unit1 = p[i * 3 + 1];
         uint_fast32_t unit2 = p[i * 3 + 2];
-#endif
+        __m64 tmp;
 
-#if _BYTE_ORDER == _LITTLE_ENDIAN && !defined(__AVX2__)
         uint_fast32_t  c0 = ( unit0/*&0x000000FC*/>>  2) & 0x3F;
-        uint_fast32_t  c1 = ((unit0 & 0x00000003) <<  4) | ((unit0 & 0x0000F000) >> 12);
-        uint_fast32_t  c2 = ((unit0 & 0x00C00000) >> 22) | ((unit0 & 0x00000F00) >>  6);
+        __m64 cs12;
+        __m64 unit00 = _mm_set_pi32(unit0, unit0);
+        cs12 = _mm_and_si64(unit00, _mm_set_pi32(0x00000003, 0x00C00000));
+        tmp  = _mm_and_si64(unit00, _mm_set_pi32(0x0000F000, 0x00000F00)),
+        cs12 = _mm_sll_pi32(cs12, _mm_set_pi32( 4,  0));
+        cs12 = _mm_srl_pi32(cs12, _mm_set_pi32( 0, 22));
+        tmp  = _mm_srl_pi32( tmp, _mm_set_pi32(12,  6));
+        cs12 = _mm_or_si64(cs12, tmp);
         uint_fast32_t  c3 = ((unit0 & 0x003F0000) >> 16);
 
         uint_fast32_t  c4 = ( unit0/*&0xFC000000*/>> 26);
-        uint_fast32_t  c5 = ((unit0 & 0x03000000) >> 20) | ((unit1 & 0x000000F0) >>  4);
-        uint_fast32_t  c6 = ((unit1 & 0x0000C000) >> 14) | ((unit1 & 0x0000000F) <<  2);
+        __m64 cs56;
+        __m64 unit01 = _mm_set_pi32(unit0, unit1);
+        __m64 unit11 = _mm_set_pi32(unit1, unit1);
+        cs56 = _mm_and_si64(unit01, _mm_set_pi32(0x03000000, 0x0000C000));
+        tmp  = _mm_and_si64(unit11, _mm_set_pi32(0x000000F0, 0x0000000F)),
+        cs56 = _mm_srl_pi32(cs56, _mm_set_pi32(20, 14));
+        tmp  = _mm_srl_pi32( tmp, _mm_set_pi32( 4,  0));
+        tmp  = _mm_sll_pi32( tmp, _mm_set_pi32( 0,  2));
+        cs56 = _mm_or_si64(cs56, tmp);
         uint_fast32_t  c7 = ((unit1 & 0x00003F00) >>  8);
 
         uint_fast32_t  c8 = ((unit1 & 0x00FC0000) >> 18);
-        uint_fast32_t  c9 = ((unit1 & 0x00030000) >> 12) | ( unit1/*&0xF0000000*/>> 28);
-        uint_fast32_t c10 = ((unit2 & 0x000000C0) >>  6) | ((unit1 & 0x0F000000) >> 22);
+        __m64 cs9a;
+        __m64 unit12 = _mm_set_pi32(unit1, unit2);
+        cs9a = _mm_and_si64(unit12, _mm_set_pi32(0x00030000, 0x000000C0));
+        tmp  = _mm_and_si64(unit11, _mm_set_pi32(0xF0000000, 0x0F000000)),
+        cs9a = _mm_srl_pi32(cs9a, _mm_set_pi32(12,  6));
+        tmp  = _mm_srl_pi32( tmp, _mm_set_pi32(28, 22));
+        cs9a = _mm_or_si64(cs9a, tmp);
         uint_fast32_t c11 = ((unit2 & 0x0000003F) >>  0);
 
         uint_fast32_t c12 = ((unit2 & 0x0000FC00) >> 10);
-        uint_fast32_t c13 = ((unit2 & 0x00000300) >>  4) | ((unit2 & 0x00F00000) >> 20);
-        uint_fast32_t c14 = ( unit2/*&0xC0000000*/>> 30) | ((unit2 & 0x000F0000) >> 14);
+        __m64 csde;
+        __m64 unit22 = _mm_set_pi32(unit2, unit2);
+        csde = _mm_and_si64(unit22, _mm_set_pi32(0x00000300, 0xC0000000));
+        tmp  = _mm_and_si64(unit22, _mm_set_pi32(0x00F00000, 0x000F0000)),
+        csde = _mm_srl_pi32(csde, _mm_set_pi32( 4, 30));
+        tmp  = _mm_srl_pi32( tmp, _mm_set_pi32(20, 14));
+        csde = _mm_or_si64(csde, tmp);
         uint_fast32_t c15 = ((unit2 & 0x3F000000) >> 24);
-#else
-        uint_fast32_t  c0 = (unit0 >> 26);
-        uint_fast32_t  c1 = (unit0 >> 20) & 0x3F;
-        uint_fast32_t  c2 = (unit0 >> 14) & 0x3F;
-        uint_fast32_t  c3 = (unit0 >>  8) & 0x3F;
 
-        uint_fast32_t  c4 = (unit0 >>  2) & 0x3F;
-        uint_fast32_t  c5 = ((unit0 <<  4) | (unit1 >> 28)) & 0x3F;
-        uint_fast32_t  c6 = (unit1 >> 22) & 0x3F;
-        uint_fast32_t  c7 = (unit1 >> 16) & 0x3F;
 
-        uint_fast32_t  c8 = (unit1 >> 10) & 0x3F;
-        uint_fast32_t  c9 = (unit1 >> 4) & 0x3F;
-        uint_fast32_t c10 = ((unit1 <<  2) | (unit2 >> 30)) & 0x3F;
-        uint_fast32_t c11 = (unit2 >> 24) & 0x3F;
 
-        uint_fast32_t c12 = (unit2 >> 18) & 0x3F;
-        uint_fast32_t c13 = (unit2 >> 12) & 0x3F;
-        uint_fast32_t c14 = (unit2 >>  6) & 0x3F;
-        uint_fast32_t c15 = (unit2 >>  0) & 0x3F;
-#endif
+        uint_fast32_t  c1 = _m_to_int(cs12);
+        uint_fast32_t  c5 = _m_to_int(cs56);
+        uint_fast32_t  c9 = _m_to_int(cs9a);
+        uint_fast32_t c13 = _m_to_int(csde);
 
-        c0 = cs[c0];
-        c1 = cs[c1];
-        c2 = cs[c2];
-        c3 = cs[c3];
+        cs12 = _m_to_int(cs12, 32);
+        cs56 = _m_to_int(cs56, 32);
+        cs9a = _m_to_int(cs9a, 32);
+        csde = _m_to_int(csde, 32);
 
-        c4 = cs[c4];
-        c5 = cs[c5];
-        c6 = cs[c6];
-        c7 = cs[c7];
+        uint_fast32_t  c2 = _m_to_int(cs12);
+        uint_fast32_t  c6 = _m_to_int(cs56);
+        uint_fast32_t c10 = _m_to_int(cs9a);
+        uint_fast32_t c14 = _m_to_int(csde);
+        // uint_fast32_t c14 = _mm_cvtsi64_si32(csde);
 
-        c8 = cs[c8];
-        c9 = cs[c9];
-        c10 = cs[c10];
-        c11 = cs[c11];
+        // c2 = c6 = c10 = c14 = 0;
+
+        c0 = cs[c0 & 0x3F];
+        c1 = cs[c1 & 0x3F];
+        c2 = cs[c2 & 0x3F];
+        c3 = cs[c3 & 0x3F];
+
+        c4 = cs[c4 & 0x3F];
+        c5 = cs[c5 & 0x3F];
+        c6 = cs[c6 & 0x3F];
+        c7 = cs[c7 & 0x3F];
+
+        c8 = cs[c8 & 0x3F];
+        c9 = cs[c9 & 0x3F];
+        c10 = cs[c10 & 0x3F];
+        c11 = cs[c11 & 0x3F];
         
-        c12 = cs[c12];
-        c13 = cs[c13];
-        c14 = cs[c14];
-        c15 = cs[c15];
+        c12 = cs[c12 & 0x3F];
+        c13 = cs[c13 & 0x3F];
+        c14 = cs[c14 & 0x3F];
+        c15 = cs[c15 & 0x3F];
 
-#if _BYTE_ORDER == _LITTLE_ENDIAN
         q[i * 4 + 0] = (c0 << 0) | (c1 << 8) | (c2 << 16) | (c3 << 24);
         q[i * 4 + 1] = (c4 << 0) | (c5 << 8) | (c6 << 16) | (c7 << 24);
         q[i * 4 + 2] = (c8 << 0) | (c9 << 8) | (c10 << 16) | (c11 << 24);
         q[i * 4 + 3] = (c12 << 0) | (c13 << 8) | (c14 << 16) | (c15 << 24);
-#else
-        q[i * 4 + 0] = (c0 << 24) | (c1 << 16) | (c2 << 8) | (c3 << 0);
-        q[i * 4 + 1] = (c4 << 24) | (c5 << 16) | (c6 << 8) | (c7 << 0);
-        q[i * 4 + 2] = (c8 << 24) | (c9 << 16) | (c10 << 8) | (c11 << 0);
-        q[i * 4 + 3] = (c12 << 24) | (c13 << 16) | (c14 << 8) | (c15 << 0);
-#endif
     }
 
+
+    ANY_EMMS();
     return 1;
 }
 int base64_24n_encode(size_t size, const uint8_t *src, uint8_t *dst)
@@ -190,18 +205,11 @@ int base64_encode(size_t size, const uint8_t *src, uint8_t *dst)
 
 int base64_32n_decode(size_t input_size, const uint8_t *src, uint8_t *dst)
 {
-    return base64_4n_decode(input_size - input_size % 32, src, dst);
-}
-
-int base64_4n_decode(size_t input_size, const uint8_t *src, uint8_t *dst)
-{
     if (src == NULL || dst == NULL) return 0;
 
     size_t units = input_size / 4;
 
-    int i;
-    #pragma omp parallel for num_threads(4)
-    for (i = 0; i < units; ++i)
+    for (size_t i = 0; i < units; ++i)
     {
         uint_fast32_t c0 = src[i * 4 + 0];
         uint_fast32_t c1 = src[i * 4 + 1];
@@ -227,7 +235,7 @@ int base64_decode(size_t input_size, const uint8_t *src, uint8_t *dst, size_t *o
     size_t units = input_size / 4;
     units -= (units > 0 && input_size % 4 == 0);
 
-    if (!base64_4n_decode(units * 4, src, dst)) return 0;
+    if (!base64_32n_decode(units * 4, src, dst)) return 0;
 
     size_t result_rem = 0;
     if (units * 4 < input_size)
