@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
-#include <ctype.h>
 #include <mmintrin.h>
 
 #ifdef __3dNOW__
@@ -29,17 +28,56 @@ static const uint_fast8_t cs2[256] = {
 };
 
 
-// static inline __m64 encode_bytes(__m64 src)
-// {
+inline __m64 encode_byte_u16x4(__m64 n)
+{
+    __m64 mask_all = _mm_set1_pi8(0xFF);
+    // if (n < 26)
+    //     return n + 65;
+    __m64 mask0 = _mm_cmpgt_pi16(_mm_set1_pi16(26), n);
+    __m64 tmp = _mm_add_pi16(n, _mm_set1_pi16(65));
+    __m64 result = _mm_and_si64(tmp, mask0);
+    // else if (n < 52)
+    //     return n - 26 + 97;
+    n = _mm_sub_pi16(n, _mm_set1_pi16(26));
+    __m64 mask = _mm_cmpgt_pi16(_mm_set1_pi16(26), n);
+    mask = _mm_and_si64(mask, _mm_xor_si64(mask0, mask_all));
+    tmp = _mm_add_pi16(n, _mm_set1_pi16(97));
+    result = _mm_or_si64(result, _mm_and_si64(tmp, mask));
+    mask0 = _mm_or_si64(mask0, mask);
+    // else if (n < 62)
+    //     return n - 52 + 48;
+    n = _mm_sub_pi16(n, _mm_set1_pi16(26));
+    mask = _mm_cmpgt_pi16(_mm_set1_pi16(10), n);
+    mask = _mm_and_si64(mask, _mm_xor_si64(mask0, mask_all));
+    tmp = _mm_add_pi16(n, _mm_set1_pi16(48));
+    result = _mm_or_si64(result, _mm_and_si64(tmp, mask));
+    mask0 = _mm_or_si64(mask0, mask);
+    // else if (n == 62)
+    //     return 43;
+    n = _mm_sub_pi16(n, _mm_set1_pi16(10));
+    mask = _mm_cmpeq_pi16(n, _mm_setzero_si64());
+    mask = _mm_and_si64(mask, _mm_xor_si64(mask0, mask_all));
+    tmp = _mm_set1_pi16(43);
+    result = _mm_or_si64(result, _mm_and_si64(tmp, mask));
+    mask0 = _mm_or_si64(mask0, mask);
+    // else
+    //     return 47;
+    mask = _mm_cmpeq_pi16(result, _mm_setzero_si64());
+    mask = _mm_and_si64(mask, _mm_xor_si64(mask0, mask_all));
+    tmp = _mm_set1_pi16(47);
+    result = _mm_or_si64(result, _mm_and_si64(tmp, mask));
 
-// }
+    return result;
+}
 
 
-int base64_12n_encode(size_t size, const uint8_t *src, uint8_t *dst)
+#define PARALLEL
+
+int base64_12n_encode(size_t input_size, const uint8_t *src, uint8_t *dst)
 {
     if (src == NULL || dst == NULL) return 0;
 
-    size_t units = size / 12;
+    size_t units = input_size / 12;
 
     const uint32_t *p = (void*)src;
     uint32_t *q = (void*)dst;
@@ -50,89 +88,110 @@ int base64_12n_encode(size_t size, const uint8_t *src, uint8_t *dst)
         uint_fast32_t unit1 = p[i * 3 + 1];
         uint_fast32_t unit2 = p[i * 3 + 2];
         __m64 tmp;
+        __m64 mask0 = _mm_set_pi32(0x00000030, 0x00000003);
+        __m64 mask1 = _mm_set_pi32(0x0000000F, 0x0000003C);
 
         uint_fast32_t  c0 = ( unit0/*&0x000000FC*/>>  2) & 0x3F;
         __m64 cs12;
-        __m64 unit00 = _mm_set_pi32(unit0, unit0);
-        cs12 = _mm_and_si64(unit00, _mm_set_pi32(0x00000003, 0x00C00000));
-        tmp  = _mm_and_si64(unit00, _mm_set_pi32(0x0000F000, 0x00000F00)),
-        cs12 = _mm_sll_pi32(cs12, _mm_set_pi32( 4,  0));
-        cs12 = _mm_srl_pi32(cs12, _mm_set_pi32( 0, 22));
-        tmp  = _mm_srl_pi32( tmp, _mm_set_pi32(12,  6));
+        cs12 = _mm_set_pi32(unit0 <<  4, unit0 >> 22);
+        tmp  = _mm_set_pi32(unit0 >> 12, unit0 >>  6);
+        cs12 = _mm_and_si64(cs12, mask0);
+        tmp  = _mm_and_si64(tmp, mask1);
         cs12 = _mm_or_si64(cs12, tmp);
         uint_fast32_t  c3 = ((unit0 & 0x003F0000) >> 16);
 
         uint_fast32_t  c4 = ( unit0/*&0xFC000000*/>> 26);
         __m64 cs56;
-        __m64 unit01 = _mm_set_pi32(unit0, unit1);
-        __m64 unit11 = _mm_set_pi32(unit1, unit1);
-        cs56 = _mm_and_si64(unit01, _mm_set_pi32(0x03000000, 0x0000C000));
-        tmp  = _mm_and_si64(unit11, _mm_set_pi32(0x000000F0, 0x0000000F)),
-        cs56 = _mm_srl_pi32(cs56, _mm_set_pi32(20, 14));
-        tmp  = _mm_srl_pi32( tmp, _mm_set_pi32( 4,  0));
-        tmp  = _mm_sll_pi32( tmp, _mm_set_pi32( 0,  2));
+        cs56 = _mm_set_pi32(unit0 >> 20, unit1 >> 14);
+        tmp  = _mm_set_pi32(unit1 >>  4, unit1 <<  2);
+        cs56 = _mm_and_si64(cs56, mask0);
+        tmp  = _mm_and_si64(tmp, mask1);
         cs56 = _mm_or_si64(cs56, tmp);
         uint_fast32_t  c7 = ((unit1 & 0x00003F00) >>  8);
-
+#ifdef PARALLEL
+        __m64 cs_1526 = _mm_or_si64(cs56, _mm_slli_si64(cs12, 16));
+#endif
         uint_fast32_t  c8 = ((unit1 & 0x00FC0000) >> 18);
         __m64 cs9a;
-        __m64 unit12 = _mm_set_pi32(unit1, unit2);
-        cs9a = _mm_and_si64(unit12, _mm_set_pi32(0x00030000, 0x000000C0));
-        tmp  = _mm_and_si64(unit11, _mm_set_pi32(0xF0000000, 0x0F000000)),
-        cs9a = _mm_srl_pi32(cs9a, _mm_set_pi32(12,  6));
-        tmp  = _mm_srl_pi32( tmp, _mm_set_pi32(28, 22));
+        cs9a = _mm_set_pi32(unit1 >> 12, unit2 >>  6);
+        tmp  = _mm_set_pi32(unit1 >> 28, unit1 >> 22);
+        cs9a = _mm_and_si64(cs9a, mask0);
+        tmp  = _mm_and_si64(tmp, mask1);
         cs9a = _mm_or_si64(cs9a, tmp);
         uint_fast32_t c11 = ((unit2 & 0x0000003F) >>  0);
 
         uint_fast32_t c12 = ((unit2 & 0x0000FC00) >> 10);
         __m64 csde;
-        __m64 unit22 = _mm_set_pi32(unit2, unit2);
-        csde = _mm_and_si64(unit22, _mm_set_pi32(0x00000300, 0xC0000000));
-        tmp  = _mm_and_si64(unit22, _mm_set_pi32(0x00F00000, 0x000F0000)),
-        csde = _mm_srl_pi32(csde, _mm_set_pi32( 4, 30));
-        tmp  = _mm_srl_pi32( tmp, _mm_set_pi32(20, 14));
+        csde = _mm_set_pi32(unit2 >>  4, unit2 >> 30);
+        tmp  = _mm_set_pi32(unit2 >> 20, unit2 >> 14);
+        csde = _mm_and_si64(csde, mask0);
+        tmp  = _mm_and_si64(tmp, mask1);
         csde = _mm_or_si64(csde, tmp);
         uint_fast32_t c15 = ((unit2 & 0x3F000000) >> 24);
+#ifdef PARALLEL
+        __m64 cs_9dae = _mm_or_si64(csde, _mm_slli_si64(cs9a, 16));
 
+        cs_1526 = encode_byte_u16x4(cs_1526);
+        cs_9dae = encode_byte_u16x4(cs_9dae);
 
+        uint_fast32_t cs_26 = _mm_cvtsi64_si32(cs_1526);
+        uint_fast32_t cs_ae = _mm_cvtsi64_si32(cs_9dae);
+        cs_1526 = _mm_srli_si64(cs_1526, 32);
+        cs_9dae = _mm_srli_si64(cs_9dae, 32);
+        uint_fast32_t cs_15 = _mm_cvtsi64_si32(cs_1526);
+        uint_fast32_t cs_9d = _mm_cvtsi64_si32(cs_9dae);
 
-        uint_fast32_t  c1 = _m_to_int(cs12);
-        uint_fast32_t  c5 = _m_to_int(cs56);
-        uint_fast32_t  c9 = _m_to_int(cs9a);
-        uint_fast32_t c13 = _m_to_int(csde);
+        uint_fast32_t  c1 = (cs_15 >> 16) & 0xFF;
+        uint_fast32_t  c5 = (cs_15 >>  0) & 0xFF;
+        uint_fast32_t  c2 = (cs_26 >> 16) & 0xFF;
+        uint_fast32_t  c6 = (cs_26 >>  0) & 0xFF;
+        uint_fast32_t  c9 = (cs_9d >> 16) & 0xFF; 
+        uint_fast32_t c13 = (cs_9d >>  0) & 0xFF;
+        uint_fast32_t c10 = (cs_ae >> 16) & 0xFF;
+        uint_fast32_t c14 = (cs_ae >>  0) & 0xFF;
+#else
+        uint_fast32_t  c2 = _mm_cvtsi64_si32(cs12);
+        uint_fast32_t  c6 = _mm_cvtsi64_si32(cs56);
+        uint_fast32_t c10 = _mm_cvtsi64_si32(cs9a);
+        uint_fast32_t c14 = _mm_cvtsi64_si32(csde);
+        cs12 = _mm_srli_si64(cs12, 32);
+        cs56 = _mm_srli_si64(cs56, 32);
+        cs9a = _mm_srli_si64(cs9a, 32);
+        csde = _mm_srli_si64(csde, 32);
+        uint_fast32_t  c1 = _mm_cvtsi64_si32(cs12);
+        uint_fast32_t  c5 = _mm_cvtsi64_si32(cs56);
+        uint_fast32_t  c9 = _mm_cvtsi64_si32(cs9a);
+        uint_fast32_t c13 = _mm_cvtsi64_si32(csde);
+#endif
 
-        cs12 = _m_to_int(cs12, 32);
-        cs56 = _m_to_int(cs56, 32);
-        cs9a = _m_to_int(cs9a, 32);
-        csde = _m_to_int(csde, 32);
+        c0 = cs[c0];
+#ifndef PARALLEL
+        c1 = cs[c1];
+        c2 = cs[c2];
+#endif
+        c3 = cs[c3];
 
-        uint_fast32_t  c2 = _m_to_int(cs12);
-        uint_fast32_t  c6 = _m_to_int(cs56);
-        uint_fast32_t c10 = _m_to_int(cs9a);
-        uint_fast32_t c14 = _m_to_int(csde);
-        // uint_fast32_t c14 = _mm_cvtsi64_si32(csde);
+        c4 = cs[c4];
+#ifndef PARALLEL
+        c5 = cs[c5];
+        c6 = cs[c6];
+#endif
+        c7 = cs[c7];
 
-        // c2 = c6 = c10 = c14 = 0;
-
-        c0 = cs[c0 & 0x3F];
-        c1 = cs[c1 & 0x3F];
-        c2 = cs[c2 & 0x3F];
-        c3 = cs[c3 & 0x3F];
-
-        c4 = cs[c4 & 0x3F];
-        c5 = cs[c5 & 0x3F];
-        c6 = cs[c6 & 0x3F];
-        c7 = cs[c7 & 0x3F];
-
-        c8 = cs[c8 & 0x3F];
-        c9 = cs[c9 & 0x3F];
-        c10 = cs[c10 & 0x3F];
-        c11 = cs[c11 & 0x3F];
+        c8 = cs[c8];
+#ifndef PARALLEL
+        c9 = cs[c9];
+        c10 = cs[c10];
+#endif
+        c11 = cs[c11];
         
-        c12 = cs[c12 & 0x3F];
-        c13 = cs[c13 & 0x3F];
-        c14 = cs[c14 & 0x3F];
-        c15 = cs[c15 & 0x3F];
+        c12 = cs[c12];
+#ifndef PARALLEL
+        c13 = cs[c13];
+        c14 = cs[c14];
+#endif
+        c15 = cs[c15];
+
 
         q[i * 4 + 0] = (c0 << 0) | (c1 << 8) | (c2 << 16) | (c3 << 24);
         q[i * 4 + 1] = (c4 << 0) | (c5 << 8) | (c6 << 16) | (c7 << 24);
@@ -144,21 +203,21 @@ int base64_12n_encode(size_t size, const uint8_t *src, uint8_t *dst)
     ANY_EMMS();
     return 1;
 }
-int base64_24n_encode(size_t size, const uint8_t *src, uint8_t *dst)
+int base64_24n_encode(size_t input_size, const uint8_t *src, uint8_t *dst)
 {
-    return base64_12n_encode(size - size % 24, src, dst);
+    return base64_12n_encode(input_size - input_size % 24, src, dst);
 }
-int base64_48n_encode(size_t size, const uint8_t *src, uint8_t *dst)
+int base64_48n_encode(size_t input_size, const uint8_t *src, uint8_t *dst)
 {
-    return base64_24n_encode(size - size % 48, src, dst);
+    return base64_24n_encode(input_size - input_size % 48, src, dst);
 }
-int base64_encode(size_t size, const uint8_t *src, uint8_t *dst)
+int base64_encode(size_t input_size, const uint8_t *src, uint8_t *dst)
 {
-    if (!base64_12n_encode(size, src, dst)) return 0;
+    if (!base64_12n_encode(input_size, src, dst)) return 0;
     if (src == NULL || dst == NULL) return 0;
 
-    size_t units0 = size / 12;
-    size_t rem0 = size % 12;
+    size_t units0 = input_size / 12;
+    size_t rem0 = input_size % 12;
 
     size_t src_base = units0 * 12;
     size_t dst_base = units0 * 16;

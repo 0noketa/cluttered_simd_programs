@@ -56,22 +56,14 @@ static void dump_u8(const char *s, __m64 current)
 {
     ANY_EMMS();
     fputs(s, stdout);
-    unsigned it = (uint8_t)(_m_to_int(current) & UINT8_MAX);
-    printf("%u,", it);
-    it = (uint8_t)((_m_to_int(current) >> 8) & UINT8_MAX);
-    printf("%u,", it);
-    it = (uint8_t)((_m_to_int(current) >> 16) & UINT8_MAX);
-    printf("%u,", it);
-    it = (uint8_t)((_m_to_int(current) >> 24) & UINT8_MAX);
-    printf("%u,", it);
-    it = (uint8_t)(_m_to_int(_m_psrlqi(current, 32)) & UINT8_MAX);
-    printf("%u,", it);
-    it = (uint8_t)((_m_to_int(_m_psrlqi(current, 32)) >> 8) & UINT8_MAX);
-    printf("%u,", it);
-    it = (uint8_t)((_m_to_int(_m_psrlqi(current, 32)) >> 16) & UINT8_MAX);
-    printf("%u,", it);
-    it = (uint8_t)((_m_to_int(_m_psrlqi(current, 32)) >> 24) & UINT8_MAX);
-    printf("%u\n", it);
+    uint8_t *p = (void*)&current;
+    int it;
+    for (int i = 0; i < 8; ++i)
+    {
+        it = p[i];
+        printf("%c(%02x),", isprint(it) ? it : '.', it);
+    }
+    puts("");
 }
 
 

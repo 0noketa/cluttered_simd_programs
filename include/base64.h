@@ -21,7 +21,7 @@ int base64_24n_encode(size_t input_size, const uint8_t *src, uint8_t *dst);
 int base64_48n_encode(size_t input_size, const uint8_t *src, uint8_t *dst);
 
 // ignores "input_size % 4" bytes
-int base64_4n_decode(size_t input_size, const uint8_t *src, uint8_t *dst)
+int base64_4n_decode(size_t input_size, const uint8_t *src, uint8_t *dst);
 // ignores "input_size % 16" bytes
 int base64_16n_decode(size_t input_size, const uint8_t *src, uint8_t *dst);
 // ignores "input_size % 32" bytes
