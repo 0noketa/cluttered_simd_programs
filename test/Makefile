@@ -54,6 +54,8 @@ sse2_min_max8:
 	$(CC) -Os -msse2 -osse2_min_max8.exe test_min_max8.c $(SRC_DIR)/x86/search_sse2.c
 avx2_min_max8:
 	$(CC) -Os -mavx -mavx2 -oavx2_min_max8.exe test_min_max8.c $(SRC_DIR)/x86/search_avx2.c
+sim_v6simd_min_max8:
+	$(CC) -O2 -osim_v6simd_min_max8.exe test_min_max8.c $(SRC_DIR)/arm/search_v6simd.c $(SRC_DIR)/generic/sim_arm_v6simd_u32.c
 
 generic_minmax8:
 	$(CC) -Ofast -ogeneric_minmax8.exe test_minmax8.c $(SRC_DIR)/generic/search_
@@ -63,6 +65,20 @@ sse2_minmax8:
 	$(CC) -Os -msse2 -osse2_minmax8.exe test_minmax8.c $(SRC_DIR)/x86/search_sse2.c
 avx2_minmax8:
 	$(CC) -Os -mavx -mavx2 -oavx2_minmax8.exe test_minmax8.c $(SRC_DIR)/x86/search_avx2.c
+
+generic_count:
+	$(CC) -Ofast -flto -ogeneric_count.exe test_count.c $(SRC_DIR)/generic/search.c
+v6simd_count:
+	$(CC) -Ofast -march=armv6z+fp -flto -ov6simd_count.exe test_count.c $(SRC_DIR)/arm/search_v6simd.c
+sim_v6simd_count:
+	$(CC) -O2 -osim_v6simd_count.exe test_count.c $(SRC_DIR)/arm/search_v6simd.c $(SRC_DIR)/generic/sim_arm_v6simd_u32.c
+generic_count8:
+	$(CC) -Ofast -flto -ogeneric_count8.exe test_count8.c $(SRC_DIR)/generic/search.c
+v6simd_count8:
+	$(CC) -Ofast -march=armv6z+fp -flto -ov6simd_count8.exe test_count8.c $(SRC_DIR)/arm/search_v6simd.c
+sim_v6simd_count8:
+	$(CC) -O2 -osim_v6simd_count8.exe test_count8.c $(SRC_DIR)/arm/search_v6simd.c $(SRC_DIR)/generic/sim_arm_v6simd_u32.c
+
 
 generic_abs:
 	$(CC) -Ofast -flto -ogeneric_abs.exe test_abs.c $(SRC_DIR)/generic/misc.c
@@ -150,9 +166,9 @@ avx2_sort:
 
 
 generic_hex:
-	$(CC) -Ofast -ogeneric_hex.exe test_hex.c $(SRC_DIR)/generic/hex.c
+	$(CC) -Ofast -ogeneric_hex.exe test_hex.c $(SRC_DIR)/generic/hex_u32.c
 generic_hex_omp_x4:
-	$(CC) -Ofast -fopenmp -ogeneric_hex_omp_x4.exe test_hex.c $(SRC_DIR)/generic/hex.c
+	$(CC) -Ofast -fopenmp -ogeneric_hex_omp_x4.exe test_hex.c $(SRC_DIR)/generic/hex_u32.c
 mmx_hex:
 	$(CC) -Ofast -mmmx -ommx_hex.exe test_hex.c $(SRC_DIR)/x86/hex_mmx.c
 neon_hex:
@@ -165,6 +181,15 @@ dpcpp_hex_omp2_x8:
 	dpcpp -Ofast -fopenmp -fvectorize -vec -odpcpp_hex_omp2x8.exe test_hex.c $(SRC_DIR)/generic/hex.c
 dpcpp_xe_hex:
 	dpcpp -Ofast -fopenmp -fiopenmp -fopenmp-targets=spir64_x86_64 -march=alderlake -mtune=alderlake -odpcpp_xe_hex.exe test_hex.c $(SRC_DIR)/generic/hex.c
+
+generic_hex_enc:
+	$(CC) -Ofast -ogeneric_hex_enc.exe test_hex_enc.c $(SRC_DIR)/generic/hex_u32.c
+v6simd_hex_enc:
+	$(CC) -Ofast -march=armv6z+fp -ov6simd_hex_enc.exe test_hex_enc.c $(SRC_DIR)/arm/hex_v6simd.c
+sim_v6simd_hex_enc:
+	$(CC) -O2 -osim_v6simd_hex_enc.exe test_hex_enc.c $(SRC_DIR)/arm/hex_v6simd.c $(SRC_DIR)/generic/sim_arm_v6simd_u32.c
+avx2_hex_enc:
+	$(CC) -Ofast -mavx2 -oavx2_hex_enc.exe test_hex_enc.c $(SRC_DIR)/x86/hex_avx2.c
 
 generic_base64e:
 	$(CC) -Ofast  -ogeneric_base64e.exe base64e.c $(SRC_DIR)/generic/base64_u32.c

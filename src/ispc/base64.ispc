@@ -68,6 +68,12 @@ uniform inline uint32 decode_byte(uniform uint32 n)
 }
 
 
+export uniform int base64_24n_encode(uniform target_size_t input_size, uniform uint32 src[], uniform uint32 dst[]);
+export uniform int base64_48n_encode(uniform target_size_t input_size, uniform uint32 src[], uniform uint32 dst[])
+{
+    return base64_24n_encode(input_size, src, dst);
+}
+
 export uniform int base64_24n_encode(uniform target_size_t input_size, uniform uint32 src[], uniform uint32 dst[])
 {
     if (src == NULL || dst == NULL) return 0;

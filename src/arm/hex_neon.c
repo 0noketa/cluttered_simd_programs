@@ -135,6 +135,16 @@ def_const_packed_u16x8(packed_16x8_65280, 65280)
 def_const_packed_u16x8(packed_16x8_0, 0)
 
 
+int base16_64n_encode_u(size_t input_size, const uint8_t *src, uint8_t *dst)
+;
+int base16_4n_encode_l(size_t input_size, const uint8_t *src, uint8_t *dst)
+;
+int base16_encode_u(size_t input_size, const uint8_t *src, uint8_t *dst)
+;
+int base16_encode_l(size_t input_size, const uint8_t *src, uint8_t *dst)
+;
+
+
 static inline uint16x4_t b16_copy_decoded_block_0(uint8x8_t src) {
     src = vsub_u8(src, diff_num);
     uint8x8_t dst = vclt_u8(src, packed_8x8_10);

@@ -1,6 +1,6 @@
 
-#ifndef _SIMD_TOOLS__SORT__H_
-#define _SIMD_TOOLS__SORT__H_
+#ifndef _SIMD_TOOLS__SEARCH__H_
+#define _SIMD_TOOLS__SEARCH__H_
 
 #include <stddef.h>
 #include <stdint.h>
@@ -47,16 +47,22 @@ void vec_i8v32n_get_minmax(size_t size, int8_t *src, int8_t *out_min, int8_t *ou
 
 /* search */
 
-int32_t vec_i32v8n_count(size_t size, int32_t *src, int32_t element)
+int32_t vec_i32v8n_count_i32(size_t size, int32_t *src, int32_t value)
 ;
-int16_t vec_i16v16n_count(size_t size, int16_t *src, int16_t element)
+size_t vec_i32v8n_count(size_t size, int32_t *src, int32_t value)
 ;
-int8_t vec_i8v32n_count(size_t size, int8_t *src, int8_t element)
+int16_t vec_i16v16n_count_i16(size_t size, int16_t *src, int16_t value)
+;
+size_t vec_i16v16n_count(size_t size, int16_t *src, int16_t value)
+;
+int8_t vec_i8v32n_count_i8(size_t size, int8_t *src, int8_t value)
+;
+size_t vec_i8v32n_count(size_t size, int8_t *src, int8_t value)
 ;
 
-int32_t vec_i32v8n_count(size_t size, int32_t *src, int32_t element);
-int16_t vec_i16v16n_count(size_t size, int16_t *src, int16_t element);
-int8_t vec_i8v32n_count(size_t size, int8_t *src, int8_t element);
+int32_t vec_i32v8n_count_gt(size_t size, int32_t *src, int32_t value);
+int16_t vec_i16v16n_count_gt(size_t size, int16_t *src, int16_t value);
+int8_t vec_i8v32n_count_gt(size_t size, int8_t *src, int8_t value);
 // any
 int32_t vec_i32v8n_get_index(size_t size, int32_t *src, int32_t element);
 int16_t vec_i16v16n_get_index(size_t size, int16_t *src, int16_t element);

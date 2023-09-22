@@ -1,29 +1,58 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
+#include <ctype.h>
 #include <stdlib.h>
 
 
-static const char cs[] =
+static const char encode_char[] =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
     "abcdefghijklmnopqrstuvwxyz"
     "0123456789+/"
     "=";
-static const uint_fast8_t cs2[256] = {
+
+#ifdef USE_LUT2
+#include "./base64_12bit_encoder.c"
+#endif
+
+#if defined USE_LUT || defined USE_LUT2
+static const uint_fast8_t decode_char_[256] = {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,62, 0, 0, 0,63,52,53,54,55,56,57,58,59,60,61, 0, 0, 0, 0, 0, 0,
     0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25, 0, 0, 0, 0, 0,
     0,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+
+    0,
 };
+#define decode_char(c) decode_char_[c]
+#else
+static uint32_t decode_char(uint32_t c)
+{
+    return isupper(c) ? c - 'A'
+            : islower(c) ? c - 'a' - 26
+            : isdigit(c) ? c - '0' + 52
+            : c == '+' ? 53
+            : c == '/' ? 54
+            : 0;
+}
+#endif
 
 
 
-
+int base64_48n_encode(size_t size, const uint8_t *src, uint8_t *dst)
+{
+    return base64_24n_encode(size - size % 48, src, dst);
+}
+int base64_24n_encode(size_t size, const uint8_t *src, uint8_t *dst)
+{
+    return base64_12n_encode(size - size % 24, src, dst);
+}
 int base64_12n_encode(size_t size, const uint8_t *src, uint8_t *dst)
+#ifdef USE_LUT2
+{
+    return base64_3n_encode(size - size % 12, src, dst);
+}
+#else
 {
     if (src == NULL || dst == NULL) return 0;
 
@@ -94,25 +123,25 @@ int base64_12n_encode(size_t size, const uint8_t *src, uint8_t *dst)
         uint_fast32_t c15 = (unit2 >>  0) & 0x3F;
 #endif
 
-        c0 = cs[c0];
-        c1 = cs[c1];
-        c2 = cs[c2];
-        c3 = cs[c3];
+        c0 = encode_char[c0];
+        c1 = encode_char[c1];
+        c2 = encode_char[c2];
+        c3 = encode_char[c3];
 
-        c4 = cs[c4];
-        c5 = cs[c5];
-        c6 = cs[c6];
-        c7 = cs[c7];
+        c4 = encode_char[c4];
+        c5 = encode_char[c5];
+        c6 = encode_char[c6];
+        c7 = encode_char[c7];
 
-        c8 = cs[c8];
-        c9 = cs[c9];
-        c10 = cs[c10];
-        c11 = cs[c11];
+        c8 = encode_char[c8];
+        c9 = encode_char[c9];
+        c10 = encode_char[c10];
+        c11 = encode_char[c11];
         
-        c12 = cs[c12];
-        c13 = cs[c13];
-        c14 = cs[c14];
-        c15 = cs[c15];
+        c12 = encode_char[c12];
+        c13 = encode_char[c13];
+        c14 = encode_char[c14];
+        c15 = encode_char[c15];
 
 #if _BYTE_ORDER == _LITTLE_ENDIAN
         q[i * 4 + 0] = (c0 << 0) | (c1 << 8) | (c2 << 16) | (c3 << 24);
@@ -129,13 +158,41 @@ int base64_12n_encode(size_t size, const uint8_t *src, uint8_t *dst)
 
     return 1;
 }
-int base64_24n_encode(size_t size, const uint8_t *src, uint8_t *dst)
+#endif
+int base64_3n_encode(size_t size, const uint8_t *src, uint8_t *dst)
 {
-    return base64_12n_encode(size - size % 24, src, dst);
-}
-int base64_48n_encode(size_t size, const uint8_t *src, uint8_t *dst)
-{
-    return base64_24n_encode(size - size % 48, src, dst);
+    size_t units = size / 3;
+
+    uint32_t *q = (void*)dst;
+
+    int i = 0;
+#ifdef USE_LUT2
+    #pragma omp parallel for num_threads(4)
+#endif
+    for (i = 0; i < units; ++i)
+    {
+        uint32_t unit = src[i * 3] << 16;
+        unit |= src[i * 3 + 1] << 8;
+        unit |= src[i * 3 + 2];
+
+#ifdef USE_LUT2
+#   if _BYTE_ORDER == _LITTLE_ENDIAN
+        uint32_t unit2 = base64_12bit_encode_[unit & 0x0FFF] << 16;
+        unit2 |= base64_12bit_encode_[(unit >> 12) & 0x0FFF];
+#   else
+        uint32_t unit2 = base64_12bit_encode_[unit & 0x0FFF];
+        unit2 |= base64_12bit_encode_[(unit >> 12) & 0x0FFF] << 16;
+#   endif
+        q[i] = unit2;
+#else
+        dst[i * 4 + 0] = encode_char[(unit >> 18) & 0x3F];
+        dst[i * 4 + 1] = encode_char[(unit >> 12) & 0x3F];
+        dst[i * 4 + 2] = encode_char[(unit >> 6) & 0x3F];
+        dst[i * 4 + 3] = encode_char[(unit >> 0) & 0x3F];
+#endif
+    }
+
+    return 1;
 }
 int base64_encode(size_t size, const uint8_t *src, uint8_t *dst)
 {
@@ -143,24 +200,15 @@ int base64_encode(size_t size, const uint8_t *src, uint8_t *dst)
     if (src == NULL || dst == NULL) return 0;
 
     size_t units0 = size / 12;
-    size_t rem0 = size % 12;
+    size_t src_base0 = units0 * 12;
+    size_t dst_base0 = units0 * 16;
 
-    size_t src_base = units0 * 12;
-    size_t dst_base = units0 * 16;
-    size_t units = rem0 / 3;
-    size_t rem = rem0 % 3;
+    if (!base64_3n_encode(size % 12, src + src_base0, dst + dst_base0)) return 0;
 
-    for (size_t i = 0; i < units; ++i)
-    {
-        uint32_t buf = src[src_base + i * 3] << 16;
-        buf |= src[src_base + i * 3 + 1] << 8;
-        buf |= src[src_base + i * 3 + 2];
-
-        dst[dst_base + i * 4 + 0] = cs[(buf >> 18) & 0x3F];
-        dst[dst_base + i * 4 + 1] = cs[(buf >> 12) & 0x3F];
-        dst[dst_base + i * 4 + 2] = cs[(buf >> 6) & 0x3F];
-        dst[dst_base + i * 4 + 3] = cs[(buf >> 0) & 0x3F];
-    }
+    size_t units = size / 3;
+    size_t src_base = units * 3;
+    size_t dst_base = units * 4;
+    size_t rem = size % 3;
 
     // 1 11111111 -> 111111 11____ _ _
     // 2 11111111 22222222 -> 111111 112222 2222__ _
@@ -168,20 +216,20 @@ int base64_encode(size_t size, const uint8_t *src, uint8_t *dst)
     {
         uint_fast32_t x = src[src_base + units * 3];
 
-        dst[dst_base + units * 4 + 0] = cs[x >> 2];
-        dst[dst_base + units * 4 + 1] = cs[(x << 4) & 0x30];
-        dst[dst_base + units * 4 + 2] = '=';
-        dst[dst_base + units * 4 + 3] = '=';
+        dst[dst_base + 0] = encode_char[x >> 2];
+        dst[dst_base + 1] = encode_char[(x << 4) & 0x30];
+        dst[dst_base + 2] = '=';
+        dst[dst_base + 3] = '=';
     }
     else if (rem == 2)
     {
-        uint_fast32_t x = src[src_base + units * 3];
-        uint_fast32_t y = src[src_base + units * 3 + 1];
+        uint_fast32_t x = src[src_base];
+        uint_fast32_t y = src[src_base + 1];
 
-        dst[dst_base + units * 4 + 0] = cs[x >> 2];
-        dst[dst_base + units * 4 + 0] = cs[((x << 4) | (y >> 4)) & 0x3F];
-        dst[dst_base + units * 4 + 0] = cs[(y << 2) & 0x3C];
-        dst[dst_base + units * 4 + 0] = '=';
+        dst[dst_base + 0] = encode_char[x >> 2];
+        dst[dst_base + 1] = encode_char[((x << 4) | (y >> 4)) & 0x3F];
+        dst[dst_base + 2] = encode_char[(y << 2) & 0x3C];
+        dst[dst_base + 3] = '=';
     }
 
     return 1;
@@ -207,10 +255,10 @@ int base64_4n_decode(size_t input_size, const uint8_t *src, uint8_t *dst)
         uint_fast32_t c1 = src[i * 4 + 1];
         uint_fast32_t c2 = src[i * 4 + 2];
         uint_fast32_t c3 = src[i * 4 + 3];
-        uint_fast32_t x0 = cs2[c0];
-        uint_fast32_t x1 = cs2[c1];
-        uint_fast32_t x2 = cs2[c2];
-        uint_fast32_t x3 = cs2[c3];
+        uint_fast32_t x0 = decode_char(c0);
+        uint_fast32_t x1 = decode_char(c1);
+        uint_fast32_t x2 = decode_char(c2);
+        uint_fast32_t x3 = decode_char(c3);
 
         uint_fast32_t buf = (x0 << 18) | (x1 << 12) | (x2 << 6) | (x3 << 0);
 
@@ -239,7 +287,7 @@ int base64_decode(size_t input_size, const uint8_t *src, uint8_t *dst, size_t *o
             int c = src[i];
             if (c == '=') break;
 
-            int x = cs2[c];
+            int x = decode_char(c);
             buf <<= 6;
             buf |= x;
             ++rem;

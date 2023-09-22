@@ -34,3 +34,24 @@ int main(int argc, char *argv[])
 
     return 0;
 }
+
+
+/* input_file="ispc-v1.21.0-windows.zip", input_size=44078388, processed_size=44078352, omp2_threads=4
+ * score = nearest(avg(samples*5), samples*5)
+ * msvc_x86_cflags={ all: "/O2", autoomp2: "/Qpar" },
+ * ispc_x86_cflags={ all: "-O3" },
+ * gcc_x86_cflags={ all: "-Ofast" },
+ * gcc_arm_cflags={ all: "-Ofast" },
+ * dpcpp_x64_xe_cflags={ all: "-Ofast -fopenmp -fiopenmp -fopenmp-targets=spir64_x86_64 -march=alderlake -mtune=alderlake" },
+
+* 2023-09-21  i5-4200M + ddr3(1600MHz) + msvc
+generic         0m0.164s
+generic+omp_x4  0m0.196s
+lut             0m0.151s
+lut+movbe       0m0.154s
+lut2            0m0.140s  85.366%
+mmx             0m0.371s
+avx2            0m0.179s
+ispc_sse2x8     0m0.312s
+ispc_avx2       0m0.263s
+**/

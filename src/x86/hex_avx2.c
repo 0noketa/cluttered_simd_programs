@@ -5,9 +5,8 @@
 #include <ctype.h>
 #include <immintrin.h>
 
+#include "../../include/hex.h"
 
-#define base16_avx_enc base16_avx2_enc
-#define base16_avx_dec base16_avx2_dec
 
 static const __m256i mask_0f = { .m256i_u64 = {
         0x0F0F0F0F0F0F0F0F, 0x0F0F0F0F0F0F0F0F,
@@ -81,6 +80,16 @@ static const __m256i filter_upper = { .m256i_u64 = {
         0x4040404040404040, 0x4040404040404040}};
 
 
+
+static uint32_t col2half(uint32_t c)
+{
+    return c - (isdigit(c) ? 48
+        : isupper(c) ? 65 - 10
+        : islower(c) ? 97 - 10
+        : 0);
+}
+
+
 static inline __m256i tochars(__m256i src, __m256i diff_a);
 
 
@@ -109,27 +118,21 @@ static void base16_any_enc(
     }
 }
 
-
-void base16_avx_enc(
-    uint8_t *dst,
-    const uint8_t *src,
-    size_t input_size, bool upper)
+static int base16_64n_encode_(size_t input_size, const uint8_t *src, uint8_t *dst, const __m256i diff_a)
 {
-    if (src == NULL || dst == NULL)
-        return;
+    if (src == NULL || dst == NULL) return 0;
 
-    __m256i diff_a = upper ? diff_a_upper : diff_a_lower;
-
-    size_t units = input_size / sizeof(__m256i);
-    size_t rest = input_size % sizeof(__m256i);
+    size_t units = input_size / 32;
 
     const __m256i *p = (void*) src;
     __m256i *q = (void*) dst;
 
-    for (size_t i = 0; i < units; ++i)
+    int i;
+    #pragma omp parallel for num_threads(4)
+    for (i = 0; i < units; ++i)
     {
         // 67452301 (ex in v4i8) -> 06040200, 07050301
-        __m256i src0 = _mm256_load_si256(p++);
+        __m256i src0 = _mm256_load_si256(p + i);
         __m256i dst0_hi = _mm256_srli_epi64(src0, 4); 
         dst0_hi = _mm256_and_si256(dst0_hi, mask_0f);
         __m256i dst0_lo = _mm256_and_si256(src0, mask_0f);
@@ -146,14 +149,40 @@ void base16_avx_enc(
         __m256i dst_hi = tochars(dst2_hi, diff_a);
         __m256i dst_lo = tochars(dst2_lo, diff_a);
 
-        _mm256_store_si256(q++, dst_lo);
-        _mm256_store_si256(q++, dst_hi);
+        _mm256_store_si256(q + i * 2 + 0, dst_lo);
+        _mm256_store_si256(q + i * 2 + 1, dst_hi);
     }
 
-    const uint8_t *src_r = (void*) p;
-    uint8_t *dst_r = (void*) q;
+    return 1;
+}
+int base16_64n_encode_u(size_t input_size, const uint8_t *src, uint8_t *dst)
+{
+    return base16_64n_encode_(input_size, src, dst, diff_a_upper);
+}
+int base16_64n_encode_l(size_t input_size, const uint8_t *src, uint8_t *dst)
+{
+    return base16_64n_encode_(input_size, src, dst, diff_a_lower);
+}
+static int base16_encode_(size_t input_size, const uint8_t *src, uint8_t *dst, const __m256i diff_a, bool upper)
+{
+    if (!base16_64n_encode_(input_size, src, dst, diff_a)) return 0;
+
+    size_t units = input_size / 32;
+    size_t rest = input_size % 32;
+    const uint8_t *src_r = (void*) (src + units * 32);
+    uint8_t *dst_r = (void*) (dst + units * 64);
 
     base16_any_enc(dst_r, src_r, rest, upper);
+
+    return 1;
+}
+int base16_encode_u(size_t input_size, const uint8_t *src, uint8_t *dst)
+{
+    return base16_encode_(input_size, src, dst, diff_a_upper, true);
+}
+int base16_encode_l(size_t input_size, const uint8_t *src, uint8_t *dst)
+{
+    return base16_encode_(input_size, src, dst, diff_a_lower, true);
 }
 
 static inline __m256i tochars(__m256i src, __m256i diff_a)
@@ -174,58 +203,13 @@ static inline __m256i tochars(__m256i src, __m256i diff_a)
 
 
 
-static inline uint8_t dec_char4(uint8_t x)
+int base16_128n_decode(size_t input_size, const uint8_t *src, uint8_t *dst)
 {
-    uint8_t d = isupper(x) ? 'A' - 10
-            : islower(x) ? 'a' - 10
-            : isdigit(x) ? '0'
-            : 0xFF;
-
-    return d == 0xFF ? d : x - d;
+    return base16_32n_decode(input_size - input_size % 128, src, dst);
 }
-
-static inline bool dec_char(uint8_t *dst, uint8_t hi, uint8_t lo)
+int base16_32n_decode(size_t input_size, const uint8_t *src, uint8_t *dst)
 {
-    uint8_t hi2 = dec_char4(hi);
-    uint8_t lo2 = dec_char4(lo);
-
-    if ((hi2 | lo2) == 0xFF)
-        return false;
-    
-    *dst = (hi2 << 4) | lo2;
-
-    return true;
-}
-static bool base16_any_dec(
-    uint8_t *dst,
-    const uint8_t *src,
-    size_t input_size)
-{
-    if ((input_size & 1) != 0 || dst == NULL || src == NULL)
-        return false;
-
-    size_t len2 = input_size >> 1;
-
-    for (size_t i = 0; i < len2; ++i)
-    {
-        size_t j = i << 1;
-        uint8_t hi = src[j];
-        uint8_t lo = src[j + 1];
-        uint8_t c;
-
-        if (dec_char(&c, hi, lo))
-            dst[i] = c;
-        else
-            return false;
-    }
-
-    return true;
-}
-
-
-int base16_128n_decode(size_t input_size, const uint32_t *src, uint32_t *dst)
-{
-    size_t units = input_size / sizeof(__m256i);
+    size_t units = input_size / 32;
 
     const __m256i *p = (void*)src;
     __m128i *q = (void*)dst;
@@ -320,5 +304,41 @@ int base16_128n_decode(size_t input_size, const uint32_t *src, uint32_t *dst)
         // _mm_store_si128(&q[i], dst2);
     }
 
-    return base16_any_dec((uint8_t*)q, (uint8_t*)p, input_size % sizeof(__m256i));
+    return 1;
+}
+int base16_2n_decode(size_t input_size, const uint8_t *src, uint8_t *dst)
+{
+    size_t base = input_size - input_size % 32;
+    if (!base16_32n_decode(base, src, dst)) return 0;
+
+    size_t units = (input_size % 32) / 2;
+
+    for (int i = 0; i < units; ++i)
+    {
+        uint32_t c0 = src[base + i * 2];
+        uint32_t c1 = src[base + i * 2 + 1];
+
+        c0 = col2half(c0);
+        c1 = col2half(c1);
+
+        c0 = (c0 << 4) | c1;
+ 
+        dst[base / 2 + i] = c0;
+    }
+
+    return 1;
+}
+int base16_decode(size_t input_size, const uint8_t *src, uint8_t *dst)
+{
+    if (!base16_2n_decode(input_size & ~1, src, dst)) return 0;
+
+    if (input_size & 1)
+    {
+        uint32_t c = src[input_size - 1];
+        c = col2half(c);
+
+        dst[(input_size - 1) / 2] = c << 8;
+    }
+
+    return 1;
 }

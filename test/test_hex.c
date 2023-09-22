@@ -24,7 +24,7 @@ int main()
             puts("error");
 
             int n = 256;
-            for (int i = 0; i < DATA_HEX_DECODED_SIZE/2; ++i)
+            for (int i = 0; i < DATA_HEX_DECODED_SIZE; ++i)
             {
                 if (dst[i] == data_hex_decoded[i]) continue;
 

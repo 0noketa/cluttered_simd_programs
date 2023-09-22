@@ -88,6 +88,15 @@ ispc_avx2_minmax8:
 	$(ISPC) --target=avx2-i16x16 -o ispc_i8.obj $(SRC_DIR)/ispc_i8.ispc
 	$(CC) /Os  /arch:AVX2 /Feispc_avx2_minmax8.exe test_minmax8.c ispc_i8.obj
 
+generic_count:
+	$(CC) /O2 /Fegeneric_count.exe test_count.c $(SRC_DIR)/generic/search.c
+sim_v6simd_count:
+	$(CC) /O2 /Fsim_v6simd_count.exe test_count.c $(SRC_DIR)/arm/search_v6simd.c  $(SRC_DIR)/generic/sim_arm_v6simd_u32.c
+generic_count8:
+	$(CC) /O2 /Fegeneric_count.exe test_count.c $(SRC_DIR)/generic/search.c
+sim_v6simd_count8:
+	$(CC) /O2 /Fsim_v6simd_count.exe test_count.c $(SRC_DIR)/arm/search_v6simd.c  $(SRC_DIR)/generic/sim_arm_v6simd_u32.c
+
 generic_abs:
 	$(CC) /O2 /Fegeneric_abs.exe test_abs.c $(SRC_DIR)\generic/misc.c
 generic_abs_omp2:
@@ -180,13 +189,13 @@ avx2_sort:
 
 
 generic_hex:
-	$(CC) /O2  /Fegeneric_hex.exe test_hex.c $(SRC_DIR)/generic/hex.c
+	$(CC) /O2  /Fegeneric_hex.exe test_hex.c $(SRC_DIR)/generic/hex_u32.c
 generic_hex_omp2:
-	$(CC) /O2 /openmp /Qpar /Fegeneric_hex_omp2.exe test_hex.c $(SRC_DIR)/generic/hex.c
-generic_hex32:
-	$(CC) /O2  /Fegeneric_hex32.exe test_hex.c $(SRC_DIR)/generic/hex_u32.c
-generic_hex32_omp2:
-	$(CC) /O2 /openmp /Qpar /Fegeneric_hex32_omp2.exe test_hex.c $(SRC_DIR)/generic/hex_u32.c
+	$(CC) /O2 /openmp /Qpar /Fegeneric_hex_omp2.exe test_hex.c $(SRC_DIR)/generic/hex_u32.c
+lut_hex:
+	$(CC) /O2 /DUSE_LUT /Felut_hex.exe test_hex.c $(SRC_DIR)/generic/hex_u32.c
+lut_hex_omp2:
+	$(CC) /O2 /openmp /Qpar /DUSE_LUT /Felut_hex_omp2.exe test_hex.c $(SRC_DIR)/generic/hex_u32.c
 mmx_hex:
 	$(CC) /O2 /arch:SSE /Femmx_hex.exe test_hex.c $(SRC_DIR)/x86/hex_mmx.c
 mmx_hex_omp2:
@@ -210,19 +219,46 @@ ispc_avx2_hex2:
 ispc_hex_u32.s:
 	$(ISPC2ASM) --target=avx2-i32x8 -o ispc_hex_u32.s $(SRC_DIR)/ispc/hex_u32.ispc
 
+generic_hex_enc:
+	$(CC) /O2 /Fegeneric_hex_enc.exe test_hex_enc.c $(SRC_DIR)/generic/hex_u32.c
+generic_hex_enc_omp_x4:
+	$(CC) /O2 /openmp /Qpar /Fegeneric_hex_enc_omp_x4.exe test_hex_enc.c $(SRC_DIR)/generic/hex_u32.c
+lut_hex_enc:
+	$(CC) /O2 /DUSE_LUT /Felut_hex_enc.exe test_hex_enc.c $(SRC_DIR)/generic/hex_u32.c
+lut_hex_enc_omp_x4:
+	$(CC) /O2 /openmp /Qpar /DUSE_LUT /Felut_hex_enc_omp_x4.exe test_hex_enc.c $(SRC_DIR)/generic/hex_u32.c
+sim_v6simd_hex_enc:
+	$(CC) /O2 /arch:AVX2 /Fesim_v6simd_hex_enc.exe test_hex_enc.c $(SRC_DIR)/arm/hex_v6simd.c $(SRC_DIR)/generic/sim_arm_v6simd_u32.c
+avx2_hex_enc:
+	$(CC) /O2 /arch:AVX2 /Feavx2_hex_enc.exe test_hex_enc.c $(SRC_DIR)/x86/hex_avx2.c
+avx2_hex_enc_omp_x4:
+	$(CC) /O2 /openmp /Qpar /arch:AVX2 /Feavx2_hex_enc_omp_x4.exe test_hex_enc.c $(SRC_DIR)/x86/hex_avx2.c
+
 base64:
 	$(CC) /O2  /Fegeneric_base64.exe base64.c $(SRC_DIR)/generic/base64_u32.c
 base64_omp_x4:
 	$(CC) /O2  /openmp /Qpar  /Fegeneric_base64_omp_x4.exe base64.c $(SRC_DIR)/generic/base64_u32.c
 
+$(SRC_DIR)/generic/base64_12bit_encoder.c:
+	$(CC) /O2  /Febase64_lut_gen.exe base64_lut_gen.c $(SRC_DIR)/generic/base64_u32.c
+	base64_lut_gen.exe > $(SRC_DIR)/generic/base64_12bit_encoder.c
+
 generic_base64e:
 	$(CC) /O2  /Fegeneric_base64e.exe base64e.c $(SRC_DIR)/generic/base64_u32.c
 generic_base64e_omp_x4:
 	$(CC) /O2  /openmp /Qpar  /Fegeneric_base64e_omp_x4.exe base64e.c $(SRC_DIR)/generic/base64_u32.c
+lut_base64e:
+	$(CC) /O2 /DUSE_LUT /Felut_base64e.exe base64e.c $(SRC_DIR)/generic/base64_u32.c
+lut_base64e_omp_x4:
+	$(CC) /O2  /openmp /Qpar  /DUSE_LUT /Felut_base64e_omp_x4.exe base64e.c $(SRC_DIR)/generic/base64_u32.c
+lut2_base64e: $(SRC_DIR)/generic/base64_12bit_encoder.c
+	$(CC) /O2 /DUSE_LUT2 /Felut2_base64e.exe base64e.c $(SRC_DIR)/generic/base64_u32.c
+lut2_base64e_omp_x4: $(SRC_DIR)/generic/base64_12bit_encoder.c
+	$(CC) /O2  /openmp /Qpar  /DUSE_LUT2 /Felut2_base64e_omp_x4.exe base64e.c $(SRC_DIR)/generic/base64_u32.c
 movbe_base64e:
-	$(CC) /O2  /arch:AVX2 /Femovbe_base64e.exe base64e.c $(SRC_DIR)/generic/base64_u32.c
+	$(CC) /O2  /arch:AVX2 /DUSE_LUT /Femovbe_base64e.exe base64e.c $(SRC_DIR)/generic/base64_u32.c
 movbe_base64e_omp_x4:
-	$(CC) /O2  /arch:AVX2 /openmp /Qpar  /Femovbe_base64e_omp_x4.exe base64e.c $(SRC_DIR)/generic/base64_u32.c
+	$(CC) /O2  /arch:AVX2 /openmp /Qpar /DUSE_LUT  /Femovbe_base64e_omp_x4.exe base64e.c $(SRC_DIR)/generic/base64_u32.c
 mmx_base64e:
 	$(CC) /O2 /Wall /arch:SSE  /Femmx_base64e.exe base64e.c $(SRC_DIR)/x86/base64_mmx.c
 avx2_base64e:

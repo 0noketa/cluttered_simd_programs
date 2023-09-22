@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <mmintrin.h>
 
-#include "../include/simd_tools.h"
+#include "../../include/search.h"
 
 #ifdef __3dNOW__
 #define ANY_EMMS _m_femms
@@ -227,6 +227,7 @@ size_t vec_i8v32n_get_max_index(size_t size, int8_t *src)
 void vec_i8v32n_get_minmax_index(size_t size, int8_t *src, size_t *out_min, size_t *out_max)
 ;
 
+
 int8_t vec_i8v32n_get_min(size_t size, int8_t *src)
 {
     size_t units = size / 8;
@@ -437,9 +438,15 @@ void vec_i8v32n_get_minmax(size_t size, int8_t *src, int8_t *out_min, int8_t *ou
 
 /* search */
 
-int32_t vec_i32v8n_count(size_t size, int32_t *src, int32_t element)
+int32_t vec_i32v8n_count_i32(size_t size, int32_t *src, int32_t value)
 ;
-int16_t vec_i16v16n_count(size_t size, int16_t *src, int16_t element)
+size_t vec_i32v8n_count(size_t size, int32_t *src, int32_t value)
 ;
-int8_t vec_i8v32n_count(size_t size, int8_t *src, int8_t element)
+int16_t vec_i16v16n_count_i16(size_t size, int16_t *src, int16_t value)
+;
+size_t vec_i16v16n_count(size_t size, int16_t *src, int16_t value)
+;
+int8_t vec_i8v32n_count_i8(size_t size, int8_t *src, int8_t value)
+;
+size_t vec_i8v32n_count(size_t size, int8_t *src, int8_t value)
 ;
