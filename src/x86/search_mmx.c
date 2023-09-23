@@ -509,10 +509,14 @@ size_t vec_i32v8n_count(size_t size, int32_t *src, int32_t value)
         size_t result2 = vec_i32v8n_count_i32(size2, src + base, value);
         result = result0 + result2;
         if (result < result0) result = SIZE_MAX;
+
+        return result;
     }
-    
-    ANY_EMMS();
-    return result;
+    else
+    {
+        ANY_EMMS();
+        return result;
+    }
 }
 // returns u16x4
 static __m64 vec_i16v16n_count_m64(size_t size, int16_t *src, int16_t value)
@@ -547,7 +551,7 @@ int16_t vec_i16v16n_count_i16(size_t size, int16_t *src, int16_t value)
 }
 size_t vec_i16v16n_count(size_t size, int16_t *src, int16_t value)
 {
-    const size_t unit_size = 0x8000;
+    const size_t unit_size = 0x8000 * 4;
     size_t units = size / unit_size;
 
     size_t result = 0;
@@ -622,7 +626,7 @@ int8_t vec_i8v32n_count_i8(size_t size, int8_t *src, int8_t value)
 }
 size_t vec_i8v32n_count(size_t size, int8_t *src, int8_t value)
 {
-    const size_t unit_size = 0x80;
+    const size_t unit_size = 0x80 * 8;
     size_t units = size / unit_size;
 
     size_t result = 0;
