@@ -253,10 +253,85 @@ int32_t vec_i32v8n_count_i32(size_t size, int32_t *src, int32_t value)
 ;
 size_t vec_i32v8n_count(size_t size, int32_t *src, int32_t value)
 ;
+// returns u16x4
+// stub
+static int16x4_t vec_i16v16n_count_u16x4(size_t size, int16_t *src, int16_t value)
+{
+    size_t units = size / 4;
+    int16x4_t *p = (void*)src;
+
+    int16x4_t results;
+    results = vxor_u16(results, results);
+    const uint16_t one_x1 = 1:
+    int16x4_t one_x4 = vld1_dup_u16(&one_x1);
+    int16x4_t needle = vld1_dup_u16(&value);
+
+    for (int i = 0; i < units; ++i)
+    {
+        int16x4_t it = vld1_u16(p + i);
+
+        int16x4_t mask = vceq_u16(it, needle);
+        int16x4_t d = vand_u16(mask, one_x4);
+        results = vadd_u16(results, d);
+    }
+
+    return results;
+}
 int16_t vec_i16v16n_count_i16(size_t size, int16_t *src, int16_t value)
-;
+{
+    int16x4_t results = vec_i16v16n_count_m64(size, src, value);
+    results = vadd_u16(results, vshr_n_u64(results, 16));
+    results = vadd_u16(results, vshr_n_u_u64(results, 32));
+    uint16_t result = vget_lane_u16(results, 0);
+
+    return result > INT16_MAX ? INT16_MAX : result;
+}
+//stub
 size_t vec_i16v16n_count(size_t size, int16_t *src, int16_t value)
-;
+{
+    const size_t unit_size = 0x8000;
+    size_t units = size / unit_size;
+
+    size_t result = 0;
+
+    for (int i = 0; i < units; ++i)
+    {
+        int64x1_t results = vreintepret_u64_u16(vec_i16v16n_count_u16x4(unit_size, src + i * unit_size, value));
+        const int16_t mask_value = 0x0000FFFF;
+        const int16x4_t mask_lower = vld1_dup_u32(&mask_value);
+        int32x2_t results2 = vreintepret_u32_u64(vand_u64(vshrq_n_u164(results, 16), mask_lower));
+        int32x2_t results3 = vand_u32(results, mask_lower);
+        results3 = vadd_u32(results, results2);
+        results3 = vadd_u32(results, _mm_srli_si64(results, 32));
+        size_t result2 = vget_lane_v32(results3, 0);
+
+        size_t result0 = result;
+        result = result0 + result2;
+        if (result < result0) result = SIZE_MAX;
+    }
+
+    size_t size2 = size % unit_size;
+    size_t base = units * unit_size;
+
+    if (size2 != 0)
+    {
+        int16x4_t results = vec_i16v16n_count_m64(size2, src + base, value);
+        const int16_t mask_value = 0x0000FFFF;
+        const int16x4_t mask_lower = vld1_dup_u32(&mask_value);
+        int32x2_t results2 = vreintepret_u32_u64(vand_u64(vshrq_n_u164(results, 16), mask_lower));
+        int32x2_t results3 = vand_u32(results, mask_lower);
+        results3 = vadd_u32(results, results2);
+        results3 = vadd_u32(results, _mm_srli_si64(results, 32));
+        size_t result2 = vget_lane_v32(results3, 0);
+
+        size_t result0 = result;
+        result = result0 + result2;
+        if (result < result0) result = SIZE_MAX;
+    }
+
+    return result;
+}
+
 int8_t vec_i8v32n_count_i8(size_t size, int8_t *src, int8_t value)
 ;
 size_t vec_i8v32n_count(size_t size, int8_t *src, int8_t value)

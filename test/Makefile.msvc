@@ -92,10 +92,14 @@ generic_count:
 	$(CC) /O2 /Fegeneric_count.exe test_count.c $(SRC_DIR)/generic/search.c
 sim_v6simd_count:
 	$(CC) /O2 /Fsim_v6simd_count.exe test_count.c $(SRC_DIR)/arm/search_v6simd.c  $(SRC_DIR)/generic/sim_arm_v6simd_u32.c
+mmx_count:
+	$(CC) /O2 /arch:SSE /Femmx_count.exe test_count.c $(SRC_DIR)/x86/search_mmx.c
 generic_count8:
-	$(CC) /O2 /Fegeneric_count.exe test_count.c $(SRC_DIR)/generic/search.c
+	$(CC) /O2 /Fegeneric_count8.exe test_count8.c $(SRC_DIR)/generic/search.c
+mmx_count8:
+	$(CC) /O2 /arch:SSE /Femmx_count8.exe test_count.c $(SRC_DIR)/x86/search_mmx.c
 sim_v6simd_count8:
-	$(CC) /O2 /Fsim_v6simd_count.exe test_count.c $(SRC_DIR)/arm/search_v6simd.c  $(SRC_DIR)/generic/sim_arm_v6simd_u32.c
+	$(CC) /O2 /Fsim_v6simd_count8.exe test_count.c $(SRC_DIR)/arm/search_v6simd.c  $(SRC_DIR)/generic/sim_arm_v6simd_u32.c
 
 generic_abs:
 	$(CC) /O2 /Fegeneric_abs.exe test_abs.c $(SRC_DIR)\generic/misc.c
