@@ -289,7 +289,7 @@ int16_t vec_i16v16n_count_i16(size_t size, int16_t *src, int16_t value)
 //stub
 size_t vec_i16v16n_count(size_t size, int16_t *src, int16_t value)
 {
-    const size_t unit_size = 0x8000;
+    const size_t unit_size = 0x8000 * 4;
     size_t units = size / unit_size;
 
     size_t result = 0;

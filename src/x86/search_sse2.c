@@ -235,11 +235,157 @@ int32_t vec_i32v8n_count_i32(size_t size, int32_t *src, int32_t value)
 ;
 size_t vec_i32v8n_count(size_t size, int32_t *src, int32_t value)
 ;
+static __m128i vec_i16v16n_count_m128(size_t size, int16_t *src, int16_t value)
+{
+    size_t units = size / 8;
+    __m128i *p = (void*)src;
+
+    __m128i results = _mm_setzero_si128();
+    __m128i one_x4 = _mm_set1_epi16(1);
+    __m128i needle = _mm_set1_epi16(value);
+
+    for (int i = 0; i < units; ++i)
+    {
+        __m128i it = p[i];
+
+        __m128i mask = _mm_cmpeq_epi16(it, needle);
+        __m128i d = _mm_and_si128(mask, one_x4);
+        results = _mm_adds_epu16(results, d);
+    }
+
+    return results;
+}
 int16_t vec_i16v16n_count_i16(size_t size, int16_t *src, int16_t value)
-;
+{
+    __m128i results = vec_i16v16n_count_m128(size, src, value);
+    results = _mm_adds_epu16(results, _mm_srli_si128(results, 2));
+    results = _mm_adds_epu16(results, _mm_srli_si128(results, 4));
+    results = _mm_adds_epu16(results, _mm_srli_si128(results, 8));
+    uint16_t result = _mm_cvtsi128_si32(results) & 0xFFFF;
+
+    return result > INT16_MAX ? INT16_MAX : result;
+}
 size_t vec_i16v16n_count(size_t size, int16_t *src, int16_t value)
-;
+{
+    const size_t unit_size = 0x8000 * 8;
+    size_t units = size / unit_size;
+
+    size_t result = 0;
+
+    for (int i = 0; i < units; ++i)
+    {
+        __m128i results = vec_i16v16n_count_m128(unit_size, src + i * unit_size, value);
+        const __m128i mask_lower = _mm_set1_epi32(0x0000FFFF);
+        __m128i results2 = _mm_and_si128(_mm_srli_si128(results, 2), mask_lower);
+        results = _mm_and_si128(results, mask_lower);
+        results = _mm_add_epi32(results, results2);
+        results = _mm_add_epi32(results, _mm_srli_si128(results, 4));
+        results = _mm_add_epi32(results, _mm_srli_si128(results, 8));
+        size_t result2 = _mm_cvtsi128_si32(results);
+
+        size_t result0 = result;
+        result = result0 + result2;
+        if (result < result0) result = SIZE_MAX;
+    }
+
+    size_t size2 = size % unit_size;
+    size_t base = units * unit_size;
+
+    if (size2 != 0)
+    {
+        __m128i results = vec_i16v16n_count_m128(size2, src + base, value);
+        const __m128i mask_lower = _mm_set1_epi32(0x0000FFFF);
+        __m128i results2 = _mm_and_si128(_mm_srli_si128(results, 2), mask_lower);
+        results = _mm_and_si128(results, mask_lower);
+        results = _mm_add_epi32(results, results2);
+        results = _mm_add_epi32(results, _mm_srli_si128(results, 4));
+        results = _mm_add_epi32(results, _mm_srli_si128(results, 8));
+        size_t result2 = _mm_cvtsi128_si32(results);
+
+        size_t result0 = result;
+        result = result0 + result2;
+        if (result < result0) result = SIZE_MAX;
+    }
+
+    return result;
+}
+// returns u8x16
+static __m128i vec_i8v32n_count_m128(size_t size, int8_t *src, int8_t value)
+{
+    size_t units = size / 16;
+    __m128i *p = (void*)src;
+
+    __m128i results = _mm_setzero_si128();
+    __m128i one_x8 = _mm_set1_epi8(1);
+    __m128i needle = _mm_set1_epi8(value);
+
+    for (int i = 0; i < units; ++i)
+    {
+        __m128i it = p[i];
+
+        __m128i mask = _mm_cmpeq_epi8(it, needle);
+        __m128i results0 = _mm_and_si128(mask, one_x8);
+        results = _mm_adds_epu8(results, results0);
+    }
+
+    return results;
+}
+// stub
 int8_t vec_i8v32n_count_i8(size_t size, int8_t *src, int8_t value)
-;
+{
+    __m128i results = vec_i8v32n_count_m128(size, src, value);
+    results = _mm_adds_epu8(results, _mm_srli_si128(results, 1));
+    results = _mm_adds_epu8(results, _mm_srli_si128(results, 2));
+    results = _mm_adds_epu8(results, _mm_srli_si128(results, 4));
+    results = _mm_adds_epu8(results, _mm_srli_si128(results, 8));
+    size_t result = _mm_cvtsi128_si32(results) & 0xFFFF;
+
+    return result > INT8_MAX ? INT8_MAX : result;
+}
+// stub
 size_t vec_i8v32n_count(size_t size, int8_t *src, int8_t value)
-;
+{
+    const size_t unit_size = 0x80 * 16;
+    size_t units = size / unit_size;
+
+    size_t result = 0;
+
+    for (int i = 0; i < units; ++i)
+    {
+        __m128i results = vec_i8v32n_count_m128(unit_size, src + i * unit_size, value);
+        const __m128i mask_lower = _mm_set1_epi16(0x00FF);
+        __m128i results2 = _mm_and_si128(_mm_srli_si128(results, 1), mask_lower);
+        results = _mm_and_si128(results, mask_lower);
+        results = _mm_add_epi16(results, results2);
+        results = _mm_add_epi16(results, _mm_srli_si128(results, 2));
+        results = _mm_add_epi16(results, _mm_srli_si128(results, 4));
+        results = _mm_add_epi16(results, _mm_srli_si128(results, 8));
+        size_t result2 = _mm_cvtsi128_si32(results) & 0xFFFF;
+
+        size_t result0 = result;
+        result = result0 + result2;
+        if (result < result0) result = SIZE_MAX;
+    }
+
+    size_t size2 = size % unit_size;
+    size_t base = units * unit_size;
+
+    if (size2 != 0)
+    {
+        __m128i results = vec_i8v32n_count_m128(size2, src + base, value);
+        const __m128i mask_lower = _mm_set1_epi16(0x00FF);
+        __m128i results2 = _mm_and_si128(_mm_srli_si128(results, 1), mask_lower);
+        results = _mm_and_si128(results, mask_lower);
+        results = _mm_add_epi16(results, results2);
+        results = _mm_add_epi16(results, _mm_srli_si128(results, 2));
+        results = _mm_add_epi16(results, _mm_srli_si128(results, 4));
+        results = _mm_add_epi16(results, _mm_srli_si128(results, 8));
+        size_t result2 = _mm_cvtsi128_si32(results) & 0xFFFF;
+
+        size_t result0 = result;
+        result = result0 + result2;
+        if (result < result0) result = SIZE_MAX;
+    }
+
+    return result;
+}

@@ -70,6 +70,10 @@ generic_count:
 	$(CC) -Ofast -flto -ogeneric_count.exe test_count.c $(SRC_DIR)/generic/search.c
 v6simd_count:
 	$(CC) -Ofast -march=armv6z+fp -flto -ov6simd_count.exe test_count.c $(SRC_DIR)/arm/search_v6simd.c
+mmx_count:
+	$(CC) -Ofast -mmmx -flto -ommx_count.exe test_count.c $(SRC_DIR)/x86/search_mmx.c
+avx2_count:
+	$(CC) -Ofast -mavx2 -flto -oavx2_count.exe test_count.c $(SRC_DIR)/x86/search_avx2.c
 sim_v6simd_count:
 	$(CC) -O2 -osim_v6simd_count.exe test_count.c $(SRC_DIR)/arm/search_v6simd.c $(SRC_DIR)/generic/sim_arm_v6simd_u32.c
 generic_count8:

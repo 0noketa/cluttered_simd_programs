@@ -298,7 +298,7 @@ size_t vec_i16v16n_count(size_t size, int16_t *src, int16_t value)
         results = _mm_add_epi32(results, results2);
         results = _mm_add_epi32(results, _mm_srli_si128(results, 4));
         results = _mm_add_epi32(results, _mm_srli_si128(results, 8));
-        size_t result2 = _mm_cvtsi128_si32(results) & 0xFFFF;
+        size_t result2 = _mm_cvtsi128_si32(results);
 
         size_t result0 = result;
         result = result0 + result2;
@@ -317,7 +317,7 @@ size_t vec_i16v16n_count(size_t size, int16_t *src, int16_t value)
         results = _mm_add_epi32(results, results2);
         results = _mm_add_epi32(results, _mm_srli_si128(results, 4));
         results = _mm_add_epi32(results, _mm_srli_si128(results, 8));
-        size_t result2 = _mm_cvtsi128_si32(results) & 0xFFFF;
+        size_t result2 = _mm_cvtsi128_si32(results);
 
         size_t result0 = result;
         result = result0 + result2;
@@ -370,7 +370,7 @@ size_t vec_i8v32n_count(size_t size, int8_t *src, int8_t value)
     for (int i = 0; i < units; ++i)
     {
         __m128i results = vec_i8v32n_count_m128(unit_size, src + i * unit_size, value);
-        const __m128i mask_lower = _mm_set1_epi32(0x00FF);
+        const __m128i mask_lower = _mm_set1_epi16(0x00FF);
         __m128i results2 = _mm_and_si128(_mm_srli_si128(results, 1), mask_lower);
         results = _mm_and_si128(results, mask_lower);
         results = _mm_add_epi16(results, results2);
@@ -390,7 +390,7 @@ size_t vec_i8v32n_count(size_t size, int8_t *src, int8_t value)
     if (size2 != 0)
     {
         __m128i results = vec_i8v32n_count_m128(size2, src + base, value);
-        const __m128i mask_lower = _mm_set1_epi32(0x00FF);
+        const __m128i mask_lower = _mm_set1_epi16(0x00FF);
         __m128i results2 = _mm_and_si128(_mm_srli_si128(results, 1), mask_lower);
         results = _mm_and_si128(results, mask_lower);
         results = _mm_add_epi16(results, results2);

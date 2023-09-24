@@ -94,16 +94,20 @@ sim_v6simd_count:
 	$(CC) /O2 /Fsim_v6simd_count.exe test_count.c $(SRC_DIR)/arm/search_v6simd.c  $(SRC_DIR)/generic/sim_arm_v6simd_u32.c
 mmx_count:
 	$(CC) /O2 /arch:SSE /Femmx_count.exe test_count.c $(SRC_DIR)/x86/search_mmx.c
+sse2_count:
+	$(CC) /O2 /arch:SSE2 /Fesse2_count.exe test_count.c $(SRC_DIR)/x86/search_sse2.c
 avx2_count:
 	$(CC) /O2 /arch:AVX2 /Feavx2_count.exe test_count.c $(SRC_DIR)/x86/search_avx2.c
 generic_count8:
 	$(CC) /O2 /Fegeneric_count8.exe test_count8.c $(SRC_DIR)/generic/search.c
 mmx_count8:
-	$(CC) /O2 /arch:SSE /Femmx_count8.exe test_count.c $(SRC_DIR)/x86/search_mmx.c
+	$(CC) /O2 /arch:SSE /Femmx_count8.exe test_count8.c $(SRC_DIR)/x86/search_mmx.c
+sse2_count8:
+	$(CC) /O2 /arch:SSE2 /Fesse2_count8.exe test_count8.c $(SRC_DIR)/x86/search_sse2.c
 avx2_count8:
-	$(CC) /O2 /arch:AVX2 /Feavx2_count8.exe test_count.c $(SRC_DIR)/x86/search_avx2.c
+	$(CC) /O2 /arch:AVX2 /Feavx2_count8.exe test_count8.c $(SRC_DIR)/x86/search_avx2.c
 sim_v6simd_count8:
-	$(CC) /O2 /Fsim_v6simd_count8.exe test_count.c $(SRC_DIR)/arm/search_v6simd.c  $(SRC_DIR)/generic/sim_arm_v6simd_u32.c
+	$(CC) /O2 /Fsim_v6simd_count8.exe test_count8.c $(SRC_DIR)/arm/search_v6simd.c  $(SRC_DIR)/generic/sim_arm_v6simd_u32.c
 
 generic_abs:
 	$(CC) /O2 /Fegeneric_abs.exe test_abs.c $(SRC_DIR)\generic/misc.c
