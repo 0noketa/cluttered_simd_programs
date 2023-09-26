@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <mmintrin.h>
 
-#include "../include/simd_tools.h"
+#include "../../include/simd_tools.h"
 
 #ifdef __3dNOW__
 #define ANY_EMMS _m_femms
@@ -17,6 +17,7 @@
 
 /* local */
 
+#if 0
 static void dump(const char *s, __m64 current)
 {
     ANY_EMMS();
@@ -65,7 +66,7 @@ static void dump_u8(const char *s, __m64 current)
     }
     puts("");
 }
-
+#endif
 
 
 
@@ -175,54 +176,75 @@ void  vec_i16v16n_dist(size_t size, int16_t *src1, int16_t *src2, int16_t *dst)
 
 
 
-/* humming weight */
+/* hamming weight */
 
-size_t vec_u256n_get_humming_weight(size_t size, uint8_t *src)
+size_t vec_u256n_get_hamming_weight(size_t size, uint8_t *src)
+#ifdef USE_128BIT_UNITS
 {
-    size_t units = size / 8;
+    size_t units = size / 8 / 2;
 
     __m64 *p = (__m64*)src;
 
     __m64 rs = _mm_setzero_si64();
 
+    __m64 mask = _mm_set1_pi32(0x55555555);
+    __m64 mask2 = _mm_set1_pi32(0x33333333);
+    __m64 mask3 = _mm_set1_pi32(0x0F0F0F0F);
+    __m64 mask4 = _mm_set1_pi32(0x00FF00FF);
+    __m64 mask5 = _mm_set1_pi32(0x0000FFFF);
+
     for (size_t i = 0; i < units; ++i)
     {
-        __m64 it = p[i++];
-        __m64 it2 = p[i];
-        __m64 rs0 = _mm_setzero_si64();
+        __m64 it = p[i * 2];
+        __m64 it2 = p[i * 2 + 1];
 
-        __m64 one_x8 = _mm_set1_pi8(1);
+        __m64 tmp = _mm_srli_si64(it, 1);
+        __m64 tmp2 = _mm_srli_si64(it2, 1);
+        it = _mm_and_si64(it, mask);
+        it2 = _mm_and_si64(it2, mask);
+        tmp = _mm_and_si64(tmp, mask);
+        tmp2 = _mm_and_si64(tmp2, mask);
+        it = _mm_adds_pu16(it, tmp);
+        it2 = _mm_adds_pu16(it2, tmp2);
 
-        for (int j = 0; j < 8; ++j)
-        {
-            __m64 tmp = _mm_and_si64(it, one_x8);
-            __m64 tmp2 = _mm_and_si64(it2, one_x8);
+        tmp = _mm_srli_si64(it, 2);
+        tmp2 = _mm_srli_si64(it2, 2);
+        it = _mm_and_si64(it, mask2);
+        it2 = _mm_and_si64(it2, mask2);
+        tmp = _mm_and_si64(tmp, mask2);
+        tmp2 = _mm_and_si64(tmp2, mask2);
+        it = _mm_adds_pu16(it, tmp);
+        it2 = _mm_adds_pu16(it2, tmp2);
 
-            rs0 = _mm_adds_pi8(rs0, tmp);
-            rs0 = _mm_adds_pi8(rs0, tmp2);
+        tmp = _mm_srli_si64(it, 4);
+        tmp2 = _mm_srli_si64(it2, 4);
+        it = _mm_and_si64(it, mask3);
+        it2 = _mm_and_si64(it2, mask3);
+        tmp = _mm_and_si64(tmp, mask3);
+        tmp2 = _mm_and_si64(tmp2, mask3);
+        it = _mm_adds_pu16(it, tmp);
+        it2 = _mm_adds_pu16(it2, tmp2);
 
-            it = _mm_srli_si64(it, 1);
-            it2 = _mm_srli_si64(it2, 1);
-        }
+        tmp = _mm_srli_si64(it, 8);
+        tmp2 = _mm_srli_si64(it2, 8);
+        it = _mm_and_si64(it, mask4);
+        it2 = _mm_and_si64(it2, mask4);
+        tmp = _mm_and_si64(tmp, mask4);
+        tmp2 = _mm_and_si64(tmp2, mask4);
+        it = _mm_adds_pu16(it, tmp);
+        it2 = _mm_adds_pu16(it2, tmp2);
 
-        __m64 mask = _mm_set1_pi32(0x000000FF);
-        __m64 mask2 = _mm_set1_pi32(0x0000FF00);
-        __m64 mask3 = _mm_set1_pi32(0x00FF0000);
-        __m64 mask4 = _mm_set1_pi32(0xFF000000);
+        tmp = _mm_srli_si64(it, 16);
+        tmp2 = _mm_srli_si64(it2, 16);
+        it = _mm_and_si64(it, mask5);
+        it2 = _mm_and_si64(it2, mask5);
+        tmp = _mm_and_si64(tmp, mask5);
+        tmp2 = _mm_and_si64(tmp2, mask5);
+        it = _mm_add_pi32(it, tmp);
+        it2 = _mm_add_pi32(it2, tmp2);
 
-        __m64 masked = _mm_and_si64(mask, rs0);
-        __m64 masked2 = _mm_and_si64(mask2, rs0);
-        __m64 masked3 = _mm_and_si64(mask3, rs0);
-        __m64 masked4 = _mm_and_si64(mask4, rs0);
-        masked2 = _mm_srli_si64(masked2, 8);
-        masked3 = _mm_srli_si64(masked3, 16);
-        masked4 = _mm_srli_si64(masked4, 24);
-
-        masked = _mm_add_pi32(masked, masked3);
-        masked2 = _mm_add_pi32(masked2, masked4);
-
-        rs = _mm_add_pi32(rs, masked);
-        rs = _mm_add_pi32(rs, masked2);
+        rs = _mm_add_pi32(rs, it);
+        rs = _mm_add_pi32(rs, it2);
     }
 
     size_t r0 = _mm_cvtsi64_si32(rs);
@@ -234,9 +256,99 @@ size_t vec_u256n_get_humming_weight(size_t size, uint8_t *src)
     ANY_EMMS();
     return r;
 }
+#else
+{
+    size_t units = size / 8;
+
+    __m64 *p = (__m64*)src;
+
+    __m64 rs = _mm_setzero_si64();
+
+    __m64 mask = _mm_set1_pi32(0x55555555);
+    __m64 mask2 = _mm_set1_pi32(0x33333333);
+    __m64 mask3 = _mm_set1_pi32(0x0F0F0F0F);
+    __m64 mask4 = _mm_set1_pi32(0x00FF00FF);
+    __m64 mask5 = _mm_set1_pi32(0x0000FFFF);
+
+    for (size_t i = 0; i < units; ++i)
+    {
+        __m64 it = p[i];
+
+        __m64 tmp = _mm_srli_si64(it, 1);
+        it = _mm_and_si64(it, mask);
+        tmp = _mm_and_si64(tmp, mask);
+        it = _mm_adds_pu16(it, tmp);
+
+        tmp = _mm_srli_si64(it, 2);
+        it = _mm_and_si64(it, mask2);
+        tmp = _mm_and_si64(tmp, mask2);
+        it = _mm_adds_pu16(it, tmp);
+
+        tmp = _mm_srli_si64(it, 4);
+        it = _mm_and_si64(it, mask3);
+        tmp = _mm_and_si64(tmp, mask3);
+        it = _mm_adds_pu16(it, tmp);
+
+        tmp = _mm_srli_si64(it, 8);
+        it = _mm_and_si64(it, mask4);
+        tmp = _mm_and_si64(tmp, mask4);
+        it = _mm_adds_pu16(it, tmp);
+
+        tmp = _mm_srli_si64(it, 16);
+        it = _mm_and_si64(it, mask5);
+        tmp = _mm_and_si64(tmp, mask5);
+        it = _mm_add_pi32(it, tmp);
+
+        rs = _mm_add_pi32(rs, it);
+    }
+
+    size_t r0 = _mm_cvtsi64_si32(rs);
+    rs = _mm_srli_si64(rs, 32);
+    size_t r1 = _mm_cvtsi64_si32(rs);
+
+    size_t r = r0 + r1;
+
+    ANY_EMMS();
+    return r;
+}
+#endif
 
 
+size_t vec_i32v8n_get_sum(size_t size, uint32_t *src)
+{
+	size_t units = size / 2 / 4;
+	__m64 *p = (__m64*)src;
 
+    __m64 rs = _mm_setzero_si64();
+
+	for (size_t i = 0; i < units; ++i)
+	{
+        __m64 it0 = p[i * 4];
+        __m64 it1 = p[i * 4 + 1];
+        __m64 it2 = p[i * 4 + 2];
+        __m64 it3 = p[i * 4 + 3];
+
+        it0 = _mm_add_pi32(it0, it1);
+        it2 = _mm_add_pi32(it2, it3);
+        it0 = _mm_add_pi32(it0, it2);
+        rs = _mm_add_pi32(rs, it0);
+	}
+
+    size_t r = _mm_cvtsi64_si32(rs);
+    rs = _mm_srli_si64(rs, 32);
+    r += _mm_cvtsi64_si32(rs);
+
+	ANY_EMMS();
+    return r;
+}
+int16_t vec_i16v16n_get_sum_i16(size_t size, uint16_t *src)
+;
+size_t vec_i16v16n_get_sum(size_t size, uint16_t *src)
+;
+int8_t vec_i8v32n_get_sum_i8(size_t size, uint8_t *src)
+;
+size_t vec_i8v32n_get_sum(size_t size, uint8_t *src)
+;
 
 
 

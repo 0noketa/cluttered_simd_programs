@@ -10,11 +10,11 @@
 #include <intrin.h>
 #endif
 
-#include "../include/simd_tools.h"
+#include "../../include/simd_tools.h"
 
 
 /* local */
-
+#if 0
 static void dump(const char *s, __m256i current)
 {
     int it;
@@ -54,7 +54,7 @@ static void dump8(const char *s, __m256i current)
 
     fputs("\n", stdout);
 }
-
+#endif
 
 
 
@@ -128,9 +128,9 @@ void  vec_i16v16n_dist(size_t size, int16_t *src1, int16_t *src2, int16_t *dst)
 }
 
 
-/* humming weight */
+/* hamming weight */
 
-static inline size_t vec_u256n_get_humming_weight_i(size_t size, uint8_t *src)
+static inline size_t vec_u256n_get_hamming_weight_i(size_t size, uint8_t *src)
 {
 #if defined(_WIN64) || defined(__X86_64__)
     size_t units = size / 8;
@@ -158,19 +158,19 @@ static inline size_t vec_u256n_get_humming_weight_i(size_t size, uint8_t *src)
     return r;
 }
 
-size_t vec_u256n_get_humming_weight(size_t size, uint8_t *src)
+size_t vec_u256n_get_hamming_weight(size_t size, uint8_t *src)
 #if defined(_WIN64) || defined(__X86_64__) || defined(USE_POPCNT)
 {
-    return vec_u256n_get_humming_weight_i(size, src);
+    return vec_u256n_get_hamming_weight_i(size, src);
 }
 #else
 {
     if (size % 64 != 0)
     {
-        return vec_u256n_get_humming_weight_i(size, src);
+        return vec_u256n_get_hamming_weight_i(size, src);
     }
 
-    size_t units = size / 32;
+    size_t units = size / 32 / 2;
 
     __m256i *p = (__m256i*)src;
 
@@ -178,33 +178,51 @@ size_t vec_u256n_get_humming_weight(size_t size, uint8_t *src)
 
     for (size_t i = 0; i < units; ++i)
     {
-        __m256i it = p[i++];
-        __m256i it2 = p[i];
-        __m256i rs0 = _mm256_setzero_si256();
+        __m256i it = p[i * 2];
+        __m256i it2 = p[i * 2 + 1];
 
-        __m256i one_x16 = _mm256_set1_epi8(1);
+        __m256i mask = _mm256_set1_epi32(0x55555555);
+        __m256i mask2 = _mm256_set1_epi32(0x33333333);
+        __m256i mask3 = _mm256_set1_epi32(0x0F0F0F0F);
 
-        for (int j = 0; j < 8; ++j)
-        {
-            __m256i tmp = _mm256_and_si256(it, one_x16);
-            __m256i tmp2 = _mm256_and_si256(it2, one_x16);
+        __m256i tmp = _mm256_srli_epi32(it, 1);
+        __m256i tmp2 = _mm256_srli_epi32(it2, 1);
+        it = _mm256_and_si256(it, mask);
+        it2 = _mm256_and_si256(it2, mask);
+        tmp = _mm256_and_si256(tmp, mask);
+        tmp2 = _mm256_and_si256(tmp2, mask);
+        it = _mm256_adds_epu16(it, tmp);
+        it2 = _mm256_adds_epu16(it2, tmp2);
 
-            rs0 = _mm256_adds_epi8(rs0, tmp);
-            rs0 = _mm256_adds_epi8(rs0, tmp2);
+        tmp = _mm256_srli_epi32(it, 2);
+        tmp2 = _mm256_srli_epi32(it2, 2);
+        it = _mm256_and_si256(it, mask2);
+        it2 = _mm256_and_si256(it2, mask2);
+        tmp = _mm256_and_si256(tmp, mask2);
+        tmp2 = _mm256_and_si256(tmp2, mask2);
+        it = _mm256_adds_epu16(it, tmp);
+        it2 = _mm256_adds_epu16(it2, tmp2);
 
-            it = _mm256_srli_epi32(it, 1);
-            it2 = _mm256_srli_epi32(it2, 1);
-        }
+        tmp = _mm256_srli_epi32(it, 4);
+        tmp2 = _mm256_srli_epi32(it2, 4);
+        it = _mm256_and_si256(it, mask3);
+        it2 = _mm256_and_si256(it2, mask3);
+        tmp = _mm256_and_si256(tmp, mask3);
+        tmp2 = _mm256_and_si256(tmp2, mask3);
+        it = _mm256_add_epi32(it, tmp);
+        it2 = _mm256_add_epi32(it2, tmp2);
 
-        __m256i mask = _mm256_set1_epi32(0x000000FF);
-        __m256i mask2 = _mm256_set1_epi32(0x0000FF00);
-        __m256i mask3 = _mm256_set1_epi32(0x00FF0000);
-        __m256i mask4 = _mm256_set1_epi32(0xFF000000);
+        it = _mm256_add_epi32(it, it2);
 
-        __m256i masked = _mm256_and_si256(mask, rs0);
-        __m256i masked2 = _mm256_and_si256(mask2, rs0);
-        __m256i masked3 = _mm256_and_si256(mask3, rs0);
-        __m256i masked4 = _mm256_and_si256(mask4, rs0);
+        __m256i bytemask = _mm256_set1_epi32(0x000000FF);
+        __m256i bytemask2 = _mm256_set1_epi32(0x0000FF00);
+        __m256i bytemask3 = _mm256_set1_epi32(0x00FF0000);
+        __m256i bytemask4 = _mm256_set1_epi32(0xFF000000);
+
+        __m256i masked = _mm256_and_si256(bytemask, it);
+        __m256i masked2 = _mm256_and_si256(bytemask2, it);
+        __m256i masked3 = _mm256_and_si256(bytemask3, it);
+        __m256i masked4 = _mm256_and_si256(bytemask4, it);
         masked2 = _mm256_srli_si256(masked2, 1);
         masked3 = _mm256_srli_si256(masked3, 2);
         masked4 = _mm256_srli_si256(masked4, 3);
@@ -235,3 +253,13 @@ size_t vec_u256n_get_humming_weight(size_t size, uint8_t *src)
 #endif
 
 
+size_t vec_i32v8n_get_sum(size_t size, uint32_t *src)
+;
+int16_t vec_i16v16n_get_sum_i16(size_t size, uint16_t *src)
+;
+size_t vec_i16v16n_get_sum(size_t size, uint16_t *src)
+;
+int8_t vec_i8v32n_get_sum_i8(size_t size, uint8_t *src)
+;
+size_t vec_i8v32n_get_sum(size_t size, uint8_t *src)
+;

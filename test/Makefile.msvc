@@ -1,35 +1,35 @@
 ARMVFP_OPTIONS= -march=armv6z+fp -mtune=arm1176jzf-s -mfpu=vfp -mfloat-abi=hard 
 SRC_DIR=../src
 RM=del
-NASM=nasm -felf 
+NASM=nasm.cmd -fwin32 --prefix _
 ISPC=ispc --emit-obj --addressing=32 --arch=x86 --target-os=windows -O3
 ISPC2ASM=ispc --emit-asm --addressing=32 --arch=x86 --target-os=windows -O3
-#NASM=nasm.cmd -felf --prefix _
 CC=cl /MD /std:c17 
 
 
 generic_min_max:
-	$(CC) /O2 /Fegeneric_min_max.exe test_min_max.c $(SRC_DIR)\generic/search.c
-generic_min_max_omp2:
-	$(CC) /Wall /MT /std:c17 /O2 /favor:blend /arch:AVX2 /openmp /Qpar /Qpar-report:2 /GL /Fegeneric_min_max_omp2.exe test_min_max.c $(SRC_DIR)\generic/search.c
-generic_min_max_autoomp2:
-	$(CC) /Wall /O2 /favor:blend /arch:AVX2 /openmp /Qpar /Qpar-report:2 /GL /Fegeneric_min_max_autoomp2.exe test_min_max.c $(SRC_DIR)\generic/search.c
+	$(CC) /O2 /arch:IA32 /Fegeneric_min_max.exe test_min_max.c $(SRC_DIR)\generic/search.c
+generic_min_max_x4:
+	$(CC) /O2 /arch:IA32 /openmp /Qpar /Qpar-report:2 /GL /Fegeneric_min_max_x4.exe test_min_max.c $(SRC_DIR)\generic/search.c
+autoavx2_min_max:
+	$(CC) /O2 /arch:AVX2 /GL /Fesutoavx2_min_max.exe test_min_max.c $(SRC_DIR)\generic/search.c
+autoavx2_min_max_x4:
+	$(CC) /O2 /arch:AVX2 /openmp /Qpar /Qpar-report:2 /GL /Feautoavx2_min_max_x4.exe test_min_max.c $(SRC_DIR)\generic/search.c
 mmx_min_max:
 	$(CC) /O2 /arch:SSE /Femmx_min_max.exe test_min_max.c $(SRC_DIR)\x86/search_mmx.c
 	$(CC) /O2 /arch:SSE /DUSE_ANDNOT /Femmx_min_max_2.exe test_min_max.c $(SRC_DIR)\x86/search_mmx.c
 sse2_min_max:
 	$(CC) /O2 /arch:SSE2 /Fesse2_min_max.exe test_min_max.c $(SRC_DIR)\x86/search_sse2.c
-	$(CC) /O2 /arch:SSE2 /DUSE_PIPE /Fesse2_min_max_2.exe test_min_max.c $(SRC_DIR)\x86/search_sse2.c
 ispc_sse2_min_max:
 	$(ISPC) --target=sse4.1-i16x8 -o ispc_i16.obj $(SRC_DIR)/ispc_i16.ispc
-	$(CC) /Os  /arch:AVX2 /Feispc_sse2_min_max.exe test_min_max.c ispc_i16.obj
+	$(CC) /Os  /arch:SSE2 /Feispc_sse2_min_max.exe test_min_max.c ispc_i16.obj
 avx2_min_max:
 	$(CC) /O2 /arch:AVX2 /Feavx2_min_max.exe test_min_max.c $(SRC_DIR)\x86/search_avx2.c
 ispc_avx2_min_max:
 	$(ISPC) --target=avx2-i16x16 -o ispc_i16.obj $(SRC_DIR)/ispc_i16.ispc
 	$(CC) /Os  /arch:AVX2 /Feispc_avx2_min_max.exe test_min_max.c ispc_i16.obj
-avx2_min_max_omp2:
-	$(CC) /MT /std:c17 /O2 /arch:AVX2 /openmp /Qpar /Qpar-report:2 /GL /Feavx2_min_max.exe test_min_max.c $(SRC_DIR)\x86/search_avx2.c
+avx2_min_max_x4:
+	$(CC) /O2 /arch:AVX2 /openmp /Qpar /Qpar-report:2 /GL /Feavx2_min_max.exe test_min_max.c $(SRC_DIR)\x86/search_avx2.c
 neon_min_max:
 	$(CC) /O1 -mfpu=neon /Feneon_min_max.exe test_min_max.c $(SRC_DIR)\arm_neon.c
 autovfp_min_max:
@@ -38,11 +38,13 @@ autoneon_min_max:
 	$(CC) /O2 -mfpu=neon /Feautoneon_min_max.exe test_min_max.c $(SRC_DIR)\generic/search.c
 
 generic_minmax:
-	$(CC) /O2 /Fegeneric_minmax.exe test_minmax.c $(SRC_DIR)\generic/search.c
-generic_minmax_omp2:
-	$(CC) /Wall /O2 /arch:AVX2 /openmp /GL /Fegeneric_minmax_omp2.exe test_minmax.c $(SRC_DIR)\generic_omp2.c
-generic_minmax_autoomp2:
-	$(CC) /Wall /O2 /arch:AVX2 /openmp /Qpar /Qpar-report:1 /GL /Fegeneric_minmax_autoomp2.exe test_minmax.c $(SRC_DIR)\generic/search.c
+	$(CC) /O2 /arch:IA32 /Fegeneric_minmax.exe test_minmax.c $(SRC_DIR)\generic/search.c
+generic_minmax_x4:
+	$(CC) /O2 /arch:IA32 /openmp /Qpar /GL /Fegeneric_minmax_x4.exe test_minmax.c $(SRC_DIR)\generic.c
+autoavx2_minmax:
+	$(CC) /O2 /arch:AVX2 /Feautoavx2_minmax.exe test_minmax.c $(SRC_DIR)\generic/search.c
+autoavx2_minmax_x4:
+	$(CC) /O2 /arch:AVX2 /openmp /Qpar /GL /Feautoavx2_minmax_x4.exe test_minmax.c $(SRC_DIR)\generic_x4.c
 mmx_minmax:
 	$(CC) /O2 /arch:SSE /Femmx_minmax.exe test_minmax.c $(SRC_DIR)\x86/search_mmx.c
 	$(CC) /O2 /arch:SSE /DUSE_ANDNOT /Femmx_minmax_2.exe test_minmax.c $(SRC_DIR)\x86/search_mmx.c
@@ -61,9 +63,9 @@ autoneon_minmax:
 	$(CC) /O2 -mfpu=neon /Feautoneon_minmax.exe test_minmax.c $(SRC_DIR)\generic/search.c
 
 generic_min_max8:
-	$(CC) /O2 /Fegeneric_min_max8.exe test_min_max8.c $(SRC_DIR)\generic/search.c
-generic_min_max8_autoomp2:
-	$(CC) /Wall /O2 /favor:blend /arch:AVX2 /openmp /Qpar /Qpar-report:1 /GL /Fegeneric_min_max8_autoomp2.exe test_min_max.c $(SRC_DIR)\generic/search.c
+	$(CC) /O2 /arch:IA32 /Fegeneric_min_max8.exe test_min_max8.c $(SRC_DIR)\generic/search.c
+generic_min_max8_x4:
+	$(CC) /Wall /O2 /arch:IA32 /openmp /Qpar /Qpar-report:1 /GL /Fegeneric_min_max8_x4.exe test_min_max.c $(SRC_DIR)\generic/search.c
 mmx_min_max8:
 	$(CC) /O2 /arch:SSE /Femmx_min_max8.exe test_min_max8.c $(SRC_DIR)\x86/search_mmx.c
 sse2_min_max8:
@@ -75,9 +77,9 @@ ispc_avx2_min_max8:
 	$(CC) /Os  /arch:AVX2 /Feispc_avx2_min_max8.exe test_min_max8.c ispc_i8.obj
 
 generic_minmax8:
-	$(CC) /O2 /Fegeneric_minmax8.exe test_minmax8.c $(SRC_DIR)\generic/search.c
-generic_minmax8_autoomp2:
-	$(CC) /Wall /O2 /favor:blend /arch:AVX2 /openmp /Qpar /Qpar-report:1 /GL /Fegeneric_minmax8_autoomp2.exe test_minmax.c $(SRC_DIR)\generic/search.c
+	$(CC) /O2 /arch:IA32 /Fegeneric_minmax8.exe test_minmax8.c $(SRC_DIR)\generic/search.c
+generic_minmax8_x4:
+	$(CC) /Wall /O2 /arch:IA32 /openmp /Qpar /Qpar-report:1 /GL /Fegeneric_minmax8_x4.exe test_minmax.c $(SRC_DIR)\generic/search.c
 mmx_minmax8:
 	$(CC) /O2 /arch:SSE /Femmx_minmax8.exe test_minmax8.c $(SRC_DIR)\x86/search_mmx.c
 sse2_minmax8:
@@ -89,41 +91,57 @@ ispc_avx2_minmax8:
 	$(CC) /Os  /arch:AVX2 /Feispc_avx2_minmax8.exe test_minmax8.c ispc_i8.obj
 
 generic_count:
-	$(CC) /O2 /Fegeneric_count.exe test_count.c $(SRC_DIR)/generic/search.c
+	$(CC) /O2 /arch:IA32 /Fegeneric_count.exe test_count.c $(SRC_DIR)/generic/search.c
 sim_v6simd_count:
 	$(CC) /O2 /Fsim_v6simd_count.exe test_count.c $(SRC_DIR)/arm/search_v6simd.c  $(SRC_DIR)/generic/sim_arm_v6simd_u32.c
 mmx_count:
 	$(CC) /O2 /arch:SSE /Femmx_count.exe test_count.c $(SRC_DIR)/x86/search_mmx.c
 sse2_count:
 	$(CC) /O2 /arch:SSE2 /Fesse2_count.exe test_count.c $(SRC_DIR)/x86/search_sse2.c
+autoavx2_count:
+	$(CC) /O2 /arch:AVX2 /Feautoavx2_count.exe test_count.c $(SRC_DIR)/generic/search.c
 avx2_count:
 	$(CC) /O2 /arch:AVX2 /Feavx2_count.exe test_count.c $(SRC_DIR)/x86/search_avx2.c
 generic_count8:
-	$(CC) /O2 /Fegeneric_count8.exe test_count8.c $(SRC_DIR)/generic/search.c
+	$(CC) /O2 /arch:IA32 /Fegeneric_count8.exe test_count8.c $(SRC_DIR)/generic/search.c
 mmx_count8:
 	$(CC) /O2 /arch:SSE /Femmx_count8.exe test_count8.c $(SRC_DIR)/x86/search_mmx.c
 sse2_count8:
 	$(CC) /O2 /arch:SSE2 /Fesse2_count8.exe test_count8.c $(SRC_DIR)/x86/search_sse2.c
+autoavx2_count8:
+	$(CC) /O2 /arch:AVX2 /Feautoavx2_count8.exe test_count8.c $(SRC_DIR)/generic/search.c
 avx2_count8:
 	$(CC) /O2 /arch:AVX2 /Feavx2_count8.exe test_count8.c $(SRC_DIR)/x86/search_avx2.c
 sim_v6simd_count8:
 	$(CC) /O2 /Fsim_v6simd_count8.exe test_count8.c $(SRC_DIR)/arm/search_v6simd.c  $(SRC_DIR)/generic/sim_arm_v6simd_u32.c
 
 generic_abs:
-	$(CC) /O2 /Fegeneric_abs.exe test_abs.c $(SRC_DIR)\generic/misc.c
-generic_abs_omp2:
-	$(CC) /Wall /O2 /favor:blend /arch:AVX2 /openmp /GL /Fegeneric_abs_omp2.exe test_abs.c $(SRC_DIR)\generic_omp2.c
+	$(CC) /O2 /arch:IA32 /Fegeneric_abs.exe test_abs.c $(SRC_DIR)\generic/misc.c
+generic_abs_x4:
+	$(CC) /Wall /O2 /arch:IA32 /favor:blend /arch:AVX2 /openmp /GL /Fegeneric_abs_x4.exe test_abs.c $(SRC_DIR)\generic_x4.c
 mmx_abs:
 	$(CC) /O2 /arch:SSE /Femmx_abs.exe test_abs.c $(SRC_DIR)\x86/misc_mmx.c
 sse2_abs:
 	$(CC) /O2 /arch:SSE2 /Fesse2_abs.exe test_abs.c $(SRC_DIR)\x86/misc_sse2.c
 
+generic_sum32:
+	$(CC) /O2 /arch:IA32 /Fegeneric_sum32.exe test_sum32.c $(SRC_DIR)\generic/misc.c
+generic_sum32_x4:
+	$(CC) /O2 /arch:IA32 /openmp /Qpar /Fegeneric_sum32_x4.exe test_sum32.c $(SRC_DIR)\generic/misc.c
+autoavx2_sum32:
+	$(CC) /O2 /arch:AVX2 /Feautoavx2_sum32.exe test_sum32.c $(SRC_DIR)\generic/misc.c
+generic2_sum32:
+	$(CC) /O2 /Fegeneric2_sum32.exe test_sum32.c $(SRC_DIR)\generic/misc2.c
+generic2_sum32_x4:
+	$(CC) /O2 /openmp /Qpar /Fegeneric2_sum32_x4.exe test_sum32.c $(SRC_DIR)\generic/misc2.c
+mmx_sum32:
+	$(CC) /O2 /arch:SSE /Femmx_sum32.exe test_sum32.c $(SRC_DIR)\x86/misc_mmx.c
+
+
 generic_diff:
-	$(CC) /O2 /Fegeneric_diff.exe test_diff.c $(SRC_DIR)\generic/misc.c
-generic_diff_omp2:
-	$(CC) /Wall /O2 /favor:blend /arch:AVX2 /openmp /GL /Fegeneric_diff_omp2.exe test_diff.c $(SRC_DIR)\generic_omp2.c
-generic_diff_autoomp2:
-	$(CC) /Wall /O2 /favor:blend /arch:AVX2 /openmp /Qpar /Qpar-report:2 /GL /Fegeneric_diff_autoomp2.exe test_diff.c $(SRC_DIR)\generic/misc.c
+	$(CC) /O2 /arch:IA32 /Fegeneric_diff.exe test_diff.c $(SRC_DIR)\generic/misc.c
+generic_diff_x4:
+	$(CC) /Wall /O2 /arch:IA32 /openmp /Qpar /Qpar-report:2 /GL /Fegeneric_diff_x4.exe test_diff.c $(SRC_DIR)\generic/misc.c
 mmx_diff:
 	$(CC) /O2 /arch:SSE /Femmx_diff.exe test_diff.c $(SRC_DIR)\x86/misc_mmx.c
 sse2_diff:
@@ -131,21 +149,46 @@ sse2_diff:
 avx2_diff:
 	$(CC) /O2 /arch:AVX2 /Feavx2_diff.exe test_diff.c $(SRC_DIR)\x86/misc_avx2.c
 
+$(SRC_DIR)/generic/hw_16bit_lut.c:
+	$(CC) /O2  /Fehw_lut_gen.exe hw_lut_gen.c $(SRC_DIR)/generic/misc.c
+	hw_lut_gen.exe > $(SRC_DIR)/generic/hw_16bit_lut.c
+
 generic_hw:
-	$(CC) /O2 /Fegeneric_hw.exe test_hw.c $(SRC_DIR)\generic/misc.c
+	$(CC) /O2 /arch:IA32 /Fegeneric_hw.exe test_hw.c $(SRC_DIR)\generic/misc.c
+generic_hw_x4:
+	$(CC) /O2 /arch:IA32 /openmp /Qpar /Fegeneric_hw_x4.exe test_hw.c $(SRC_DIR)\generic/misc.c
+autoavx2_hw:
+	$(CC) /O2 /arch:AVX2 /Feautoavx2_hw.exe test_hw.c $(SRC_DIR)\generic/misc.c
+autoavx2_hw_x4:
+	$(CC) /O2 /arch:AVX2 /openmp /Qpar /Feautoavx2_hw_x4.exe test_hw.c $(SRC_DIR)\generic/misc.c
+lut_hw: $(SRC_DIR)/generic/hw_16bit_lut.c
+	$(CC) /O2 /DUSE_LUT /Felut_hw.exe test_Hw.c $(SRC_DIR)/generic/misc.c
+lut_hw_x4: $(SRC_DIR)/generic/hw_16bit_lut.c
+	$(CC) /O2 /openmp /Qpar /DUSE_LUT /Felut_hw_x4.exe test_hw.c $(SRC_DIR)/generic/misc.c
 mmx_hw:
-	$(CC) /O2 /arch:SSE /Femmx_hw.exe test_hw.c $(SRC_DIR)\x86/misc_mmx.c
+	$(CC) /O2 /arch:SSE /DUSE_128BIT_UNITS /Femmx_hw.exe test_hw.c $(SRC_DIR)\x86/misc_mmx.c
+mmx_hw_2:
+	$(CC) /O2 /arch:SSE /Femmx_hw_2.exe test_hw.c $(SRC_DIR)\x86/misc_mmx.c
+mmx_hw_man:
+	$(NASM) -DUSE_128BIT_UNITS -o misc_mmx_man.obj $(SRC_DIR)\x86/misc_mmx_man.asm
+	$(CC) /O2 /arch:SSE  /Femmx_hw_man.exe test_hw.c misc_mmx_man.obj
+mmx_hw_man_2:
+	$(NASM) -o misc_mmx_man_2.obj $(SRC_DIR)\x86/misc_mmx_man.asm
+	$(CC) /O2 /arch:SSE  /Femmx_hw_man_2.exe test_hw.c misc_mmx_man_2.obj
 sse2_hw:
 	$(CC) /O2 /arch:SSE2 /Fesse2_hw.exe test_hw.c $(SRC_DIR)\x86/misc_sse2.c
 avx2_hw:
 	$(CC) /O2 /arch:AVX2 /Feavx2_hw.exe test_hw.c $(SRC_DIR)\x86/misc_avx2.c
-	$(CC) /O2 /arch:AVX2 /DUSE_POPCNT /Feavx2_hw_3.exe test_hw.c $(SRC_DIR)\x86/misc_avx2.c
+avx2_hw_2:
+	$(CC) /O2 /arch:AVX2 /Feavx2_hw_2.exe test_hw.c $(SRC_DIR)\x86/misc_avx2_2.c
+popcnt_hw:
+	$(CC) /O2 /arch:AVX2 /DUSE_POPCNT /Fepopcnt_hw.exe test_hw.c $(SRC_DIR)\x86/misc_avx2.c
 
 generic_rev:
-	$(CC) /O2 /Fegeneric_rev.exe test_rev.c $(SRC_DIR)\generic/sort.c
+	$(CC) /O2 /arch:IA32 /Fegeneric_rev.exe test_rev.c $(SRC_DIR)\generic/sort.c
 x86_rev:
 	$(NASM) $(SRC_DIR)\x86_generic.asm
-	$(CC) /O2 /Fex86_rev.exe test_rev.c $(SRC_DIR)\x86_generic.o
+	$(CC) /O2 /arch:IA32 /Fex86_rev.exe test_rev.c $(SRC_DIR)\x86_generic.o
 mmx_rev:
 	$(CC) /O2 /arch:SSE /Femmx_rev.exe test_rev.c $(SRC_DIR)\x86_mmx.c
 x86_3dnow_rev:
@@ -154,10 +197,10 @@ sse2_rev:
 	$(CC) /O2 /arch:SSE2 /Fesse2_rev.exe test_rev.c $(SRC_DIR)\x86_sse2.c
 
 generic_rev8:
-	$(CC) /O2 /Fegeneric_rev8.exe test_rev8.c $(SRC_DIR)\generic/sort.c
+	$(CC) /O2 /arch:IA32 /Fegeneric_rev8.exe test_rev8.c $(SRC_DIR)\generic/sort.c
 x86_rev8:
 	$(NASM) $(SRC_DIR)\x86_generic.asm
-	$(CC) /O2 /Fex86_rev8.exe test_rev8.c $(SRC_DIR)\x86_generic.o
+	$(CC) /O2 /arch:IA32 /Fex86_rev8.exe test_rev8.c $(SRC_DIR)\x86_generic.o
 mmx_rev8:
 	$(CC) /O2 /arch:SSE /Femmx_rev8.exe test_rev8.c $(SRC_DIR)\x86_mmx.c
 x86_3dnow_rev8:
@@ -166,10 +209,10 @@ sse2_rev8:
 	$(CC) /O2 /arch:SSE2 /Fesse2_rev8.exe test_rev8.c $(SRC_DIR)\x86_sse2.c
 
 generic_rev32:
-	$(CC) /O2 /Fegeneric_rev32.exe test_rev32.c $(SRC_DIR)\generic/sort.c
+	$(CC) /O2 /arch:IA32 /Fegeneric_rev32.exe test_rev32.c $(SRC_DIR)\generic/sort.c
 x86_rev32:
 	$(NASM) $(SRC_DIR)\x86_generic.asm
-	$(CC) /O2 /Fex86_rev32.exe test_rev32.c $(SRC_DIR)\x86_generic.o
+	$(CC) /O2 /arch:IA32 /Fex86_rev32.exe test_rev32.c $(SRC_DIR)\x86_generic.o
 mmx_rev32:
 	$(CC) /O2 /arch:SSE /Femmx_rev32.exe test_rev32.c $(SRC_DIR)\x86_mmx.c
 x86_3dnow_rev32:
@@ -182,7 +225,7 @@ avx2_nocross_rev32:
 	$(CC) /O2 /arch:AVX2 /DNO_CROSS_FETCH /Feavx2_nocross_rev32.exe test_rev32.c $(SRC_DIR)\x86_avx2.c
 
 generic_shift:
-	$(CC) /O2 /Fegeneric_shift.exe test_shift.c $(SRC_DIR)\generic/sort.c
+	$(CC) /O2 /arch:IA32 /Fegeneric_shift.exe test_shift.c $(SRC_DIR)\generic/sort.c
 mmx_shift:
 	$(CC) /O2 /arch:SSE /Femmx_shift.exe test_shift.c $(SRC_DIR)\x86_mmx.c
 sse2_shift:
@@ -191,7 +234,7 @@ avx2_shift:
 	$(CC) /O2 /arch:AVX2 /Feavx2_shift.exe test_shift.c $(SRC_DIR)\x86_avx2.c
 
 generic_sort:
-	$(CC) /O2 /Fegeneric_sort.exe test_sort.c $(SRC_DIR)\generic/sort.c
+	$(CC) /O2 /arch:IA32 /Fegeneric_sort.exe test_sort.c $(SRC_DIR)\generic/sort.c
 mmx_sort:
 	$(CC) /O2 /arch:SSE /Femmx_sort.exe test_sort.c $(SRC_DIR)\x86_mmx.c
 sse2_sort:
@@ -201,17 +244,15 @@ avx2_sort:
 
 
 generic_hex:
-	$(CC) /O2  /Fegeneric_hex.exe test_hex.c $(SRC_DIR)/generic/hex_u32.c
-generic_hex_omp2:
-	$(CC) /O2 /openmp /Qpar /Fegeneric_hex_omp2.exe test_hex.c $(SRC_DIR)/generic/hex_u32.c
+	$(CC) /O2 /arch:IA32  /Fegeneric_hex.exe test_hex.c $(SRC_DIR)/generic/hex_u32.c
+generic_hex_x4:
+	$(CC) /O2 /arch:IA32 /openmp /Qpar /Fegeneric_hex_x4.exe test_hex.c $(SRC_DIR)/generic/hex_u32.c
 lut_hex:
-	$(CC) /O2 /DUSE_LUT /Felut_hex.exe test_hex.c $(SRC_DIR)/generic/hex_u32.c
-lut_hex_omp2:
-	$(CC) /O2 /openmp /Qpar /DUSE_LUT /Felut_hex_omp2.exe test_hex.c $(SRC_DIR)/generic/hex_u32.c
+	$(CC) /O2 /arch:IA32 /DUSE_LUT /Felut_hex.exe test_hex.c $(SRC_DIR)/generic/hex_u32.c
+lut_hex_x4:
+	$(CC) /O2 /arch:IA32 /openmp /Qpar /DUSE_LUT /Felut_hex_x4.exe test_hex.c $(SRC_DIR)/generic/hex_u32.c
 mmx_hex:
 	$(CC) /O2 /arch:SSE /Femmx_hex.exe test_hex.c $(SRC_DIR)/x86/hex_mmx.c
-mmx_hex_omp2:
-	$(CC) /O2 /openmp /Qpar /arch:SSE /Femmx_hex_omp2.exe test_hex.c $(SRC_DIR)/x86/hex_mmx.c
 ispc_sse2_hex:
 	$(ISPC) --target=sse2-i32x8 -o ispc_hex_u32.obj $(SRC_DIR)/ispc/hex_u32.ispc
 	$(CC) /Os  /arch:SSE2 /Feispc_sse2_hex.exe test_hex.c ispc_hex_u32.obj
@@ -232,41 +273,45 @@ ispc_hex_u32.s:
 	$(ISPC2ASM) --target=avx2-i32x8 -o ispc_hex_u32.s $(SRC_DIR)/ispc/hex_u32.ispc
 
 generic_hex_enc:
-	$(CC) /O2 /Fegeneric_hex_enc.exe test_hex_enc.c $(SRC_DIR)/generic/hex_u32.c
+	$(CC) /O2 /arch:IA32 /Fegeneric_hex_enc.exe test_hex_enc.c $(SRC_DIR)/generic/hex_u32.c
 generic_hex_enc_omp_x4:
-	$(CC) /O2 /openmp /Qpar /Fegeneric_hex_enc_omp_x4.exe test_hex_enc.c $(SRC_DIR)/generic/hex_u32.c
+	$(CC) /O2 /arch:IA32 /openmp /Qpar /Fegeneric_hex_enc_omp_x4.exe test_hex_enc.c $(SRC_DIR)/generic/hex_u32.c
 lut_hex_enc:
-	$(CC) /O2 /DUSE_LUT /Felut_hex_enc.exe test_hex_enc.c $(SRC_DIR)/generic/hex_u32.c
+	$(CC) /O2 /arch:IA32 /DUSE_LUT /Felut_hex_enc.exe test_hex_enc.c $(SRC_DIR)/generic/hex_u32.c
 lut_hex_enc_omp_x4:
-	$(CC) /O2 /openmp /Qpar /DUSE_LUT /Felut_hex_enc_omp_x4.exe test_hex_enc.c $(SRC_DIR)/generic/hex_u32.c
+	$(CC) /O2 /arch:IA32 /openmp /Qpar /DUSE_LUT /Felut_hex_enc_omp_x4.exe test_hex_enc.c $(SRC_DIR)/generic/hex_u32.c
 sim_v6simd_hex_enc:
 	$(CC) /O2 /arch:AVX2 /Fesim_v6simd_hex_enc.exe test_hex_enc.c $(SRC_DIR)/arm/hex_v6simd.c $(SRC_DIR)/generic/sim_arm_v6simd_u32.c
 avx2_hex_enc:
 	$(CC) /O2 /arch:AVX2 /Feavx2_hex_enc.exe test_hex_enc.c $(SRC_DIR)/x86/hex_avx2.c
 avx2_hex_enc_omp_x4:
-	$(CC) /O2 /openmp /Qpar /arch:AVX2 /Feavx2_hex_enc_omp_x4.exe test_hex_enc.c $(SRC_DIR)/x86/hex_avx2.c
+	$(CC) /O2 /arch:AVX2 /openmp /Qpar /Feavx2_hex_enc_omp_x4.exe test_hex_enc.c $(SRC_DIR)/x86/hex_avx2.c
 
 base64:
-	$(CC) /O2  /Fegeneric_base64.exe base64.c $(SRC_DIR)/generic/base64_u32.c
+	$(CC) /O2 /arch:IA32  /Fegeneric_base64.exe base64.c $(SRC_DIR)/generic/base64_u32.c
 base64_omp_x4:
-	$(CC) /O2  /openmp /Qpar  /Fegeneric_base64_omp_x4.exe base64.c $(SRC_DIR)/generic/base64_u32.c
+	$(CC) /O2 /arch:IA32  /openmp /Qpar  /Fegeneric_base64_omp_x4.exe base64.c $(SRC_DIR)/generic/base64_u32.c
 
 $(SRC_DIR)/generic/base64_12bit_encoder.c:
 	$(CC) /O2  /Febase64_lut_gen.exe base64_lut_gen.c $(SRC_DIR)/generic/base64_u32.c
 	base64_lut_gen.exe > $(SRC_DIR)/generic/base64_12bit_encoder.c
 
 generic_base64e:
-	$(CC) /O2  /Fegeneric_base64e.exe base64e.c $(SRC_DIR)/generic/base64_u32.c
-generic_base64e_omp_x4:
-	$(CC) /O2  /openmp /Qpar  /Fegeneric_base64e_omp_x4.exe base64e.c $(SRC_DIR)/generic/base64_u32.c
+	$(CC) /O2 /arch:IA32  /Fegeneric_base64e.exe base64e.c $(SRC_DIR)/generic/base64_u32.c
+generic_base64e_x4:
+	$(CC) /O2 /arch:IA32  /openmp /Qpar  /Fegeneric_base64e_x4.exe base64e.c $(SRC_DIR)/generic/base64_u32.c
 lut_base64e:
-	$(CC) /O2 /DUSE_LUT /Felut_base64e.exe base64e.c $(SRC_DIR)/generic/base64_u32.c
-lut_base64e_omp_x4:
-	$(CC) /O2  /openmp /Qpar  /DUSE_LUT /Felut_base64e_omp_x4.exe base64e.c $(SRC_DIR)/generic/base64_u32.c
+	$(CC) /O2 /arch:IA32 /DUSE_LUT /Felut_base64e.exe base64e.c $(SRC_DIR)/generic/base64_u32.c
+lut_base64e_x4:
+	$(CC) /O2 /arch:IA32  /openmp /Qpar  /DUSE_LUT /Felut_base64e_x4.exe base64e.c $(SRC_DIR)/generic/base64_u32.c
 lut2_base64e: $(SRC_DIR)/generic/base64_12bit_encoder.c
-	$(CC) /O2 /DUSE_LUT2 /Felut2_base64e.exe base64e.c $(SRC_DIR)/generic/base64_u32.c
-lut2_base64e_omp_x4: $(SRC_DIR)/generic/base64_12bit_encoder.c
-	$(CC) /O2  /openmp /Qpar  /DUSE_LUT2 /Felut2_base64e_omp_x4.exe base64e.c $(SRC_DIR)/generic/base64_u32.c
+	$(CC) /O2 /arch:IA32 /DUSE_LUT2 /Felut2_base64e.exe base64e.c $(SRC_DIR)/generic/base64_u32.c
+lut2_base64e_x4: $(SRC_DIR)/generic/base64_12bit_encoder.c
+	$(CC) /O2 /arch:IA32  /openmp /Qpar  /DUSE_LUT2 /Felut2_base64e_x4.exe base64e.c $(SRC_DIR)/generic/base64_u32.c
+autoavx2_base64e:
+	$(CC) /O2 /arch:AVX2  /Feautoavx2_base64e.exe base64e.c $(SRC_DIR)/generic/base64_u32.c
+autoavx2_base64e_x4:
+	$(CC) /O2 /arch:AVX2  /openmp /Qpar  /Feautoavx2_base64e_x4.exe base64e.c $(SRC_DIR)/generic/base64_u32.c
 movbe_base64e:
 	$(CC) /O2  /arch:AVX2 /DUSE_LUT /Femovbe_base64e.exe base64e.c $(SRC_DIR)/generic/base64_u32.c
 movbe_base64e_omp_x4:

@@ -61,13 +61,21 @@ void vec_u256n_ror(size_t size, uint8_t *src, int n, uint8_t *dst);
 void vec_u256n_ror(size_t size, uint8_t *src, int n, uint8_t *dst);
 
 
-/* humming weight */
+/* hamming weight */
 
-size_t vec_u256n_safe_size_for_gethummingweight();
-size_t vec_u256n_get_humming_weight(size_t size, uint8_t *src);
-size_t vec_u512n_safe_size_for_gethummingweight();
-size_t vec_u512n_get_humming_weight(size_t size, uint8_t *src);
+size_t vec_u256n_safe_size_for_gethammingweight();
+size_t vec_u256n_get_hamming_weight(size_t size, uint8_t *src);
+size_t vec_u512n_safe_size_for_gethammingweight();
+size_t vec_u512n_get_hamming_weight(size_t size, uint8_t *src);
 
+
+/* sum */
+
+size_t vec_i32v8_get_sum(size_t size, uint32_t *src);
+int16_t vec_i16v16_get_sum_i16(size_t size, uint16_t *src);
+size_t vec_i16v16_get_sum(size_t size, uint16_t *src);
+int8_t vec_i8v32_get_sum_i8(size_t size, uint8_t *src);
+size_t vec_i8v32_get_sum(size_t size, uint8_t *src);
 
 /* sorted arrays */
 
@@ -120,9 +128,68 @@ int32_t vec_i32v8n_get_nth_by_key8(size_t size, int8_t *keys, int32_t *vals, int
 int16_t vec_i16v16n_get_nth_by_key16(size_t size, int16_t *keys, int16_t *vals, int16_t key, size_t n);
 int8_t vec_i8v32n_get_nth_by_key8(size_t size, int8_t *keys, int8_t *vals, int8_t key, size_t n);
 
-void  vec_i32v86n_mask_unique(size_t size, int32_t *src, int32_t *dst);
+void  vec_i32v8n_mask_unique(size_t size, int32_t *src, int32_t *dst);
 void  vec_i16v16n_mask_unique(size_t size, int16_t *src, int16_t *dst);
 void  vec_i8v32n_mask_unique(size_t size, int8_t *src, int8_t *dst);
+
+
+/* rescale */
+
+// 10101010 -> 1100110011001100
+int vec_i16v16n_rescale_i32v16n(size_t input_size, int16_t *src, int32_t *dst);
+int vec_i8v32n_rescale_i32v32n(size_t input_size, int8_t *src, int32_t *dst);
+int vec_i8v16n_rescale_i16v16n(size_t input_size, int8_t *src, int16_t *dst);
+
+// 10101010 -> 1000100010001000
+int vec_i16v16n_sparse_i32v16n(size_t input_size, int16_t *src, int32_t *dst);
+int vec_i8v32n_sparse_i32v32n(size_t input_size, int8_t *src, int32_t *dst);
+int vec_i8v16n_sparse_i16v16n(size_t input_size, int8_t *src, int16_t *dst);
+
+// 1000110001001100 -> 10101010  OR
+int vec_i32v16n_rescale_i16v16n(size_t input_size, int32_t *src, int16_t *dst);
+int vec_i32v32n_rescale_i8v32n(size_t input_size, int32_t *src, int8_t *dst);
+int vec_i16v32n_rescale_i8v32n(size_t input_size, int16_t *src, int8_t *dst);
+
+// 1000110001001100 -> 00100010  AND
+int vec_i32v16n_densify_i16v16n(size_t input_size, int32_t *src, int16_t *dst);
+int vec_i32v32n_densify_i8v32n(size_t input_size, int32_t *src, int8_t *dst);
+int vec_i16v32n_densify_i8v32n(size_t input_size, int16_t *src, int8_t *dst);
+
+
+/* interleaved/packed array/table */
+
+// src[0], _, _, _, _, _, _, _, src[1], _, _, _, _, _, _, _, ...
+int  vec_i32x8xn_set_col(size_t input_size, int32_t *src, int32_t *dst);
+int  vec_i16x16xn_set_col(size_t input_size, int16_t *src, int16_t *dst);
+int  vec_i8x32xn_set_col(size_t input_size, int8_t *src, int8_t *dst);
+int  vec_i32x8xn_set_col_at(size_t input_size, int32_t *src, int32_t *dst, int index);
+int  vec_i16x16xn_set_col_at(size_t input_size, int16_t *src, int16_t *dst, int index);
+int  vec_i8x32xn_set_col_at(size_t input_size, int16_t *src, int16_t *dst, int index);
+
+int  vec_i32x8xn_interleave8(size_t input_size, int32_t **src, int32_t *dst);
+int  vec_i16x16xn_interleave16(size_t input_size, int16_t **src, int16_t *dst);
+int  vec_i8x32xn_interleave32(size_t input_size, int8_t **src, int8_t *dst);
+
+int  vec_i32x8xn_deinterleave8(size_t input_size, int32_t *src, int32_t **dst);
+int  vec_i16x16xn_deinterleave16(size_t input_size, int16_t *src, int16_t **dst);
+int  vec_i8x32xn_deinterleave32(size_t input_size, int8_t *src, int8_t **dst);
+
+// ..., a[i],b[i],c[i],d[i],e[i],f[i],g[i],h[i], ... ->
+// ..., _, a[i],b[i],c[i],d[i],e[i],f[i],g[i], ...
+int  vec_i32x8xn_shr1(size_t input_size, int32_t *src, int32_t *dst);
+int  vec_i16x16xn_shr1(size_t input_size, int16_t *src, int16_t *dst);
+int  vec_i8x32xn_shr1(size_t input_size, int8_t *src, int8_t *dst);
+
+// result(i32x8x8):
+//   src[0], src[8], ..., src[48], src[56], 
+//   src[1], src[9], ..., src[49], src[57],
+//   ...,
+//   src[1], src[9], ..., src[54], src[62],
+//   src[7], src[15], ..., src[55], src[63],
+//   src[64], src[72], ...,
+int  vec_i32x8x8xn_get_rotated(size_t input_size, int32_t *src, int32_t *dst);
+int  vec_i16x16x16xn_get_rotated(size_t input_size, int16_t *src, int16_t *dst);
+int  vec_i8x32x32xn_get_rotated(size_t input_size, int16_t *src, int16_t *dst);
 
 
 #endif
