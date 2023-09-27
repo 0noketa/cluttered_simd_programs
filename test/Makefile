@@ -1,9 +1,9 @@
 ARMVFP_OPTIONS= -march=armv6z+fp -mtune=arm1176jzf-s -mfpu=vfp -mfloat-abi=hard 
 SRC_DIR=../src/
 RM=del
-# NASM=nasm -felf 
+NASM=nasm -felf 
 ISPC=ispc --emit-obj --addressing=32 --arch=x86 --target-os=windows -O3
-NASM=nasm.cmd -felf --prefix _
+#NASM=nasm.cmd -felf --prefix _
 CC=gcc
 
 
@@ -100,15 +100,40 @@ sse2_diff:
 avx2_diff:
 	$(CC) -Os -mavx2 -oavx2_diff.exe test_diff.c $(SRC_DIR)/x86/misc_avx2.c
 
+$(SRC_DIR)/generic/hw_16bit_lut.c:
+	$(CC) -Ofast  -ohw_lut_gen.exe hw_lut_gen.c $(SRC_DIR)/generic/misc.c
+	hw_lut_gen.exe > $(SRC_DIR)/generic/hw_16bit_lut.c
+
 generic_hw:
 	$(CC) -Ofast -ogeneric_hw.exe test_hw.c $(SRC_DIR)/generic/misc.c
+generic_hw_x4:
+	$(CC) -Ofast -fopenmp -ogeneric_hw_x4.exe test_hw.c $(SRC_DIR)/generic/misc.c
+autoavx2_hw:
+	$(CC) -Ofast -mavx2 -oautoavx2_hw.exe test_hw.c $(SRC_DIR)/generic/misc.c
+autoavx2_hw_x4:
+	$(CC) -Ofast -mavx2 -fopenmp -oautoavx2_hw_x4.exe test_hw.c $(SRC_DIR)/generic/misc.c
+lut_hw: $(SRC_DIR)/generic/hw_16bit_lut.c
+	$(CC) -Ofast -DUSE_LUT -olut_hw.exe test_hw.c $(SRC_DIR)/generic/misc.c
+lut_hw_x4: $(SRC_DIR)/generic/hw_16bit_lut.c
+	$(CC) -Ofast -fopenmp -DUSE_LUT -olut_hw_x4.exe test_hw.c $(SRC_DIR)/generic/misc.c
 mmx_hw:
-	$(CC) -Os -mmmx -ommx_hw.exe test_hw.c $(SRC_DIR)/x86/misc_mmx.c
+	$(CC) -Ofast -mmmx -DUSE_128BIT_UNITS -ommx_hw.exe test_hw.c $(SRC_DIR)/x86/misc_mmx.c
+mmx_hw_2:
+	$(CC) -Ofast -mmmx -ommx_hw_2.exe test_hw.c $(SRC_DIR)/x86/misc_mmx.c
+mmx_hw_man:
+	$(NASM) -DUSE_128BIT_UNITS -o misc_mmx_man.o $(SRC_DIR)/x86/misc_mmx_man.asm
+	$(CC) -Ofast -mmmx  -ommx_hw_man.exe test_hw.c misc_mmx_man.o
+mmx_hw_man_2:
+	$(NASM) -o misc_mmx_man_2.o $(SRC_DIR)/x86/misc_mmx_man.asm
+	$(CC) -Ofast -mmmx  -ommx_hw_man_2.exe test_hw.c misc_mmx_man_2.o
 sse2_hw:
-	$(CC) -Os -msse2 -osse2_hw.exe test_hw.c $(SRC_DIR)/x86/misc_sse2.c
+	$(CC) -Ofast -msse2 -osse2_hw.exe test_hw.c $(SRC_DIR)/x86/misc_sse2.c
 avx2_hw:
-	$(CC) -Os -mavx2 -oavx2_hw.exe test_hw.c $(SRC_DIR)/x86/misc_avx2.c
-	$(CC) -Os -mavx2 -DUSE_POPCNT -oavx2_hw_3.exe test_hw.c $(SRC_DIR)/x86/misc_avx2.c
+	$(CC) -Ofast -mavx2 -oavx2_hw.exe test_hw.c $(SRC_DIR)/x86/misc_avx2.c
+avx2_hw_2:
+	$(CC) -Ofast -mavx2 -oavx2_hw_2.exe test_hw.c $(SRC_DIR)/x86/misc_avx2_2.c
+popcnt_hw:
+	$(CC) -Ofast -mavx2 -DUSE_POPCNT -opopcnt_hw.exe test_hw.c $(SRC_DIR)/x86/misc_avx2.c
 
 generic_rev:
 	$(CC) -Ofast -ogeneric_rev.exe test_rev.c $(SRC_DIR)/generic/sort.c

@@ -44,6 +44,15 @@ int8_t vec_i8v32n_get_max(size_t size, int8_t *src)
 void vec_i8v32n_get_minmax(size_t size, int8_t *src, int8_t *out_min, int8_t *out_max)
 ;
 
+int32_t vec_i32v8n_get_range(size_t size, int32_t *src);
+int16_t vec_i16v16n_get_range(size_t size, int16_t *src);
+int8_t vec_i8v32n_get_range(size_t size, int8_t *src);
+
+int32_t vec_i32v8n_get_avg(size_t size, int32_t *src);
+int16_t vec_i16v16n_get_avg(size_t size, int16_t *src);
+int8_t vec_i8v32n_get_avg(size_t size, int8_t *src);
+
+
 
 /* search */
 

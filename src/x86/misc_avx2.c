@@ -130,7 +130,7 @@ void  vec_i16v16n_dist(size_t size, int16_t *src1, int16_t *src2, int16_t *dst)
 
 /* hamming weight */
 
-static inline size_t vec_u256n_get_hamming_weight_i(size_t size, uint8_t *src)
+static inline size_t vec_u256n_get_hamming_weight_popcnt(size_t size, uint8_t *src)
 {
 #if defined(_WIN64) || defined(__X86_64__)
     size_t units = size / 8;
@@ -157,17 +157,72 @@ static inline size_t vec_u256n_get_hamming_weight_i(size_t size, uint8_t *src)
 
     return r;
 }
+static inline __m256i vec_u256n_get_hamming_weight_i(__m256i it, __m256i it2, __m256i rs)
+{
+    __m256i mask = _mm256_set1_epi32(0x55555555);
+    __m256i mask2 = _mm256_set1_epi32(0x33333333);
+    __m256i mask3 = _mm256_set1_epi32(0x0F0F0F0F);
 
+    __m256i tmp = _mm256_srli_epi32(it, 1);
+    __m256i tmp2 = _mm256_srli_epi32(it2, 1);
+    it = _mm256_and_si256(it, mask);
+    it2 = _mm256_and_si256(it2, mask);
+    tmp = _mm256_and_si256(tmp, mask);
+    tmp2 = _mm256_and_si256(tmp2, mask);
+    it = _mm256_adds_epu16(it, tmp);
+    it2 = _mm256_adds_epu16(it2, tmp2);
+
+    tmp = _mm256_srli_epi32(it, 2);
+    tmp2 = _mm256_srli_epi32(it2, 2);
+    it = _mm256_and_si256(it, mask2);
+    it2 = _mm256_and_si256(it2, mask2);
+    tmp = _mm256_and_si256(tmp, mask2);
+    tmp2 = _mm256_and_si256(tmp2, mask2);
+    it = _mm256_adds_epu16(it, tmp);
+    it2 = _mm256_adds_epu16(it2, tmp2);
+
+    tmp = _mm256_srli_epi32(it, 4);
+    tmp2 = _mm256_srli_epi32(it2, 4);
+    it = _mm256_and_si256(it, mask3);
+    it2 = _mm256_and_si256(it2, mask3);
+    tmp = _mm256_and_si256(tmp, mask3);
+    tmp2 = _mm256_and_si256(tmp2, mask3);
+    it = _mm256_add_epi32(it, tmp);
+    it2 = _mm256_add_epi32(it2, tmp2);
+
+    it = _mm256_add_epi32(it, it2);
+
+    __m256i bytemask = _mm256_set1_epi32(0x000000FF);
+    __m256i bytemask2 = _mm256_set1_epi32(0x0000FF00);
+    __m256i bytemask3 = _mm256_set1_epi32(0x00FF0000);
+    __m256i bytemask4 = _mm256_set1_epi32(0xFF000000);
+
+    __m256i masked = _mm256_and_si256(bytemask, it);
+    __m256i masked2 = _mm256_and_si256(bytemask2, it);
+    __m256i masked3 = _mm256_and_si256(bytemask3, it);
+    __m256i masked4 = _mm256_and_si256(bytemask4, it);
+    masked2 = _mm256_srli_si256(masked2, 1);
+    masked3 = _mm256_srli_si256(masked3, 2);
+    masked4 = _mm256_srli_si256(masked4, 3);
+
+    masked = _mm256_add_epi32(masked, masked3);
+    masked2 = _mm256_add_epi32(masked2, masked4);
+
+    rs = _mm256_add_epi32(rs, masked);
+    rs = _mm256_add_epi32(rs, masked2);
+
+    return rs;
+}
 size_t vec_u256n_get_hamming_weight(size_t size, uint8_t *src)
 #if defined(_WIN64) || defined(__X86_64__) || defined(USE_POPCNT)
 {
-    return vec_u256n_get_hamming_weight_i(size, src);
+    return vec_u256n_get_hamming_weight_popcnt(size, src);
 }
 #else
 {
     if (size % 64 != 0)
     {
-        return vec_u256n_get_hamming_weight_i(size, src);
+        return vec_u256n_get_hamming_weight_popcnt(size, src);
     }
 
     size_t units = size / 32 / 2;
@@ -181,57 +236,86 @@ size_t vec_u256n_get_hamming_weight(size_t size, uint8_t *src)
         __m256i it = p[i * 2];
         __m256i it2 = p[i * 2 + 1];
 
-        __m256i mask = _mm256_set1_epi32(0x55555555);
-        __m256i mask2 = _mm256_set1_epi32(0x33333333);
-        __m256i mask3 = _mm256_set1_epi32(0x0F0F0F0F);
+        rs = vec_u256n_get_hamming_weight_i(it, it2, rs);
+    }
 
-        __m256i tmp = _mm256_srli_epi32(it, 1);
-        __m256i tmp2 = _mm256_srli_epi32(it2, 1);
-        it = _mm256_and_si256(it, mask);
-        it2 = _mm256_and_si256(it2, mask);
-        tmp = _mm256_and_si256(tmp, mask);
-        tmp2 = _mm256_and_si256(tmp2, mask);
-        it = _mm256_adds_epu16(it, tmp);
-        it2 = _mm256_adds_epu16(it2, tmp2);
+    __m128i rs0 = _mm256_extracti128_si256(rs, 0);
+    __m128i rs1 = _mm256_extracti128_si256(rs, 1);
+    rs0 = _mm_add_epi32(rs0, rs1);
 
-        tmp = _mm256_srli_epi32(it, 2);
-        tmp2 = _mm256_srli_epi32(it2, 2);
-        it = _mm256_and_si256(it, mask2);
-        it2 = _mm256_and_si256(it2, mask2);
-        tmp = _mm256_and_si256(tmp, mask2);
-        tmp2 = _mm256_and_si256(tmp2, mask2);
-        it = _mm256_adds_epu16(it, tmp);
-        it2 = _mm256_adds_epu16(it2, tmp2);
+    size_t r0 = _mm_cvtsi128_si32(rs0);
+    rs0 = _mm_srli_si128(rs0, 4);
+    size_t r1 = _mm_cvtsi128_si32(rs0);
+    rs0 = _mm_srli_si128(rs0, 4);
+    size_t r2 = _mm_cvtsi128_si32(rs0);
+    rs0 = _mm_srli_si128(rs0, 4);
+    size_t r3 = _mm_cvtsi128_si32(rs0);
 
-        tmp = _mm256_srli_epi32(it, 4);
-        tmp2 = _mm256_srli_epi32(it2, 4);
-        it = _mm256_and_si256(it, mask3);
-        it2 = _mm256_and_si256(it2, mask3);
-        tmp = _mm256_and_si256(tmp, mask3);
-        tmp2 = _mm256_and_si256(tmp2, mask3);
-        it = _mm256_add_epi32(it, tmp);
-        it2 = _mm256_add_epi32(it2, tmp2);
+    size_t r = r0 + r1 + r2 + r3;
 
-        it = _mm256_add_epi32(it, it2);
+    return r;
+}
+#endif
 
-        __m256i bytemask = _mm256_set1_epi32(0x000000FF);
-        __m256i bytemask2 = _mm256_set1_epi32(0x0000FF00);
-        __m256i bytemask3 = _mm256_set1_epi32(0x00FF0000);
-        __m256i bytemask4 = _mm256_set1_epi32(0xFF000000);
+static inline size_t vec_u256n_get_hamming_distance_popcnt(size_t size, uint8_t *src1, uint8_t *src2)
+{
+#if defined(_WIN64) || defined(__X86_64__)
+    size_t units = size / 8;
+    uint64_t *p = (uint64_t*)src1;
+    uint64_t *q = (uint64_t*)src2;
+#else
+    size_t units = size / 4;
+    uint32_t *p = (uint32_t*)src1;
+    uint32_t *q = (uint32_t*)src2;
+#endif
 
-        __m256i masked = _mm256_and_si256(bytemask, it);
-        __m256i masked2 = _mm256_and_si256(bytemask2, it);
-        __m256i masked3 = _mm256_and_si256(bytemask3, it);
-        __m256i masked4 = _mm256_and_si256(bytemask4, it);
-        masked2 = _mm256_srli_si256(masked2, 1);
-        masked3 = _mm256_srli_si256(masked3, 2);
-        masked4 = _mm256_srli_si256(masked4, 3);
+    size_t r = 0;
 
-        masked = _mm256_add_epi32(masked, masked3);
-        masked2 = _mm256_add_epi32(masked2, masked4);
+    for (size_t i = 0; i < units; ++i)
+    {
+#if defined(_WIN64)
+        r += __popcnt64(p[i] ^ q[i]);
+#elif defined(__X86_64__)
+        r += __popcntq(p[i] ^ q[i]);
+#elif defined(_WIN32) && defined(_MSC_VER)
+        r += __popcnt(p[i] ^ q[i]);
+#else
+        r += __popcntd(p[i] ^ q[i]);
+#endif
+    }
 
-        rs = _mm256_add_epi32(rs, masked);
-        rs = _mm256_add_epi32(rs, masked2);
+    return r;
+}
+size_t vec_u256n_get_hamming_distance(size_t size, uint8_t *src1, uint8_t *src2)
+#if defined(_WIN64) || defined(__X86_64__) || defined(USE_POPCNT)
+{
+    return vec_u256n_get_hamming_distance_popcnt(size, src1, src2);
+}
+#else
+{
+    if (size % 64 != 0)
+    {
+        return vec_u256n_get_hamming_distance_popcnt(size, src1, src2);
+    }
+
+    size_t units = size / 32 / 2;
+
+    __m256i *p = (__m256i*)src1;
+    __m256i *q = (__m256i*)src2;
+
+    __m256i rs = _mm256_setzero_si256();
+
+    for (size_t i = 0; i < units; ++i)
+    {
+        __m256i it = p[i * 2];
+        __m256i it2 = p[i * 2 + 1];
+        __m256i it_b = q[i * 2];
+        __m256i it2_b = q[i * 2 + 1];
+
+        it = _mm256_xor_si256(it, it_b);
+        it2 = _mm256_xor_si256(it2, it2_b);
+
+        rs = vec_u256n_get_hamming_weight_i(it, it2, rs);
     }
 
     __m128i rs0 = _mm256_extracti128_si256(rs, 0);

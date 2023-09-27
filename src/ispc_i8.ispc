@@ -60,12 +60,12 @@ uniform int16 reduce_max(int16 src)
     return result;
 }
 
-uniform int8 reduce_amp(int8 src)
+uniform int8 reduce_range(int8 src)
 {
     return reduce_max(src) - reduce_min(src);
 }
 
-uniform int8 reduce_amp(uniform int8 src[], uniform target_size_t offsetBase)
+uniform int8 reduce_range(uniform int8 src[], uniform target_size_t offsetBase)
 {
     int8 it = src[offsetBase + programIndex];
 
@@ -184,7 +184,7 @@ export void vec_i8v32n_get_minmax(uniform target_size_t size, uniform uint16 src
 
 
 // get width of min ... max
-export uniform int8 vec_i8v32n_amp(uniform target_size_t size, uniform uint16 src[])
+export uniform int8 vec_i8v32n_get_range(uniform target_size_t size, uniform uint16 src[])
 {
     uniform int8 min_result;
     uniform int8 max_result;
@@ -195,7 +195,7 @@ export uniform int8 vec_i8v32n_amp(uniform target_size_t size, uniform uint16 sr
 }
 
 // generates longer code
-export uniform int8 vec_i8v32n_amp_2(uniform target_size_t size, uniform uint16 src[])
+export uniform int8 vec_i8v32n_get_range_2(uniform target_size_t size, uniform uint16 src[])
 {
     return vec_i8v32n_get_max(size, src) - vec_i8v32n_get_min(size, src);
 }

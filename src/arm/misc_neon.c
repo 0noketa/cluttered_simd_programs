@@ -44,8 +44,94 @@ static void dump8(const char *s, int8x8_t current)
 
 /* humming weight */
 
+#ifdef USE_128BIT_UNITS
+static inline uint32x2_t vec_u256n_get_hamming_weight_i(uint32x2_t it, uint32x2_t it2, uint32x2_t rs,  uint32x2_t mask, uint32x2_t mask2, uint32x2_t mask3, uint32x2_t mask4, uint32x2_t mask5)
+{
+    uint32x2_t tmp = vshr_n_u32(it, 1);
+    uint32x2_t tmp2 = vshr_n_u32(it2, 1);
+    it = vand_u32(it, mask);
+    it2 = vand_u32(it2, mask);
+    tmp = vand_u32(tmp, mask);
+    tmp2 = vand_u32(tmp2, mask);
+    it = vadd_u32(it, tmp);
+    it2 = vadd_u32(it2, tmp2);
+
+    tmp = vshr_n_u32(it, 2);
+    tmp2 = vshr_n_u32(it2, 2);
+    it = vand_u32(it, mask2);
+    it2 = vand_u32(it2, mask2);
+    tmp = vand_u32(tmp, mask2);
+    tmp2 = vand_u32(tmp2, mask2);
+    it = vadd_u32(it, tmp);
+    it2 = vadd_u32(it2, tmp2);
+
+    tmp = vshr_n_u32(it, 4);
+    tmp2 = vshr_n_u32(it2, 4);
+    it = vand_u32(it, mask3);
+    it2 = vand_u32(it2, mask3);
+    tmp = vand_u32(tmp, mask3);
+    tmp2 = vand_u32(tmp2, mask3);
+    it = vadd_u32(it, tmp);
+    it2 = vadd_u32(it2, tmp2);
+
+    tmp = vshr_n_u32(it, 8);
+    tmp2 = vshr_n_u32(it2, 8);
+    it = vand_u32(it, mask4);
+    it2 = vand_u32(it2, mask4);
+    tmp = vand_u32(tmp, mask4);
+    tmp2 = vand_u32(tmp2, mask4);
+    it = vadd_u32(it, tmp);
+    it2 = vadd_u32(it2, tmp2);
+
+    tmp = vshr_n_u32(it, 16);
+    tmp2 = vshr_n_u32(it2, 16);
+    it = vand_u32(it, mask5);
+    it2 = vand_u32(it2, mask5);
+    tmp = vand_u32(tmp, mask5);
+    tmp2 = vand_u32(tmp2, mask5);
+    it = vadd_u32(it, tmp);
+    it2 = vadd_u32(it2, tmp2);
+
+    rs = vadd_U32(rs, it);
+    rs = vadd_u32(rs, it2);
+
+    return rs;
+}
+#else
+static inline uint32x2_t vec_u256n_get_hamming_weight_i(uint32x2_t it, uint32x2_t rs,  uint32x2_t mask, uint32x2_t mask2, uint32x2_t mask3, uint32x2_t mask4, uint32x2_t mask5)
+{
+    uint32x2_t tmp = vshr_n_u32(it, 1);
+    it = vand_u32(it, mask);
+    tmp = vand_u32(tmp, mask);
+    it = vadd_u32(it, tmp);
+
+    tmp = vshr_n_u32(it, 2);
+    it = vand_u32(it, mask2);
+    tmp = vand_u32(tmp, mask2);
+    it = vadd_u32(it, tmp);
+
+    tmp = vshr_n_u32(it, 4);
+    it = vand_u32(it, mask3);
+    tmp = vand_u32(tmp, mask3);
+    it = vadd_u32(it, tmp);
+
+    tmp = vshr_n_u32(it, 8);
+    it = vand_u32(it, mask4);
+    tmp = vand_u32(tmp, mask4);
+    it = vadd_u32(it, tmp);
+
+    tmp = vshr_n_u32(it, 16);
+    it = vand_u32(it, mask5);
+    tmp = vand_u32(tmp, mask5);
+    it = vadd_u32(it, tmp);
+
+    rs = vadd_u32(rs, it);
+
+    return rs;
+}
+#endif
 size_t vec_u256n_get_humming_weight(size_t size, uint8_t *src)
-#ifdef USE_PIPELINE
+#ifdef USE_128BIT_UNITS
 {
     size_t units = size / 8 / 2;
 
@@ -68,53 +154,7 @@ size_t vec_u256n_get_humming_weight(size_t size, uint8_t *src)
         uint32x2_t it = vld1_u32(p + i * 2);
         uint32x2_t it2 = vld1_u32(p + i * 2 + 1);
 
-        uint32x2_t tmp = vshr_n_u32(it, 1);
-        uint32x2_t tmp2 = vshr_n_u32(it2, 1);
-        it = vand_u32(it, mask);
-        it2 = vand_u32(it2, mask);
-        tmp = vand_u32(tmp, mask);
-        tmp2 = vand_u32(tmp2, mask);
-        it = vadd_u32(it, tmp);
-        it2 = vadd_u32(it2, tmp2);
-
-        tmp = vshr_n_u32(it, 2);
-        tmp2 = vshr_n_u32(it2, 2);
-        it = vand_u32(it, mask2);
-        it2 = vand_u32(it2, mask2);
-        tmp = vand_u32(tmp, mask2);
-        tmp2 = vand_u32(tmp2, mask2);
-        it = vadd_u32(it, tmp);
-        it2 = vadd_u32(it2, tmp2);
-
-        tmp = vshr_n_u32(it, 4);
-        tmp2 = vshr_n_u32(it2, 4);
-        it = vand_u32(it, mask3);
-        it2 = vand_u32(it2, mask3);
-        tmp = vand_u32(tmp, mask3);
-        tmp2 = vand_u32(tmp2, mask3);
-        it = vadd_u32(it, tmp);
-        it2 = vadd_u32(it2, tmp2);
-
-        tmp = vshr_n_u32(it, 8);
-        tmp2 = vshr_n_u32(it2, 8);
-        it = vand_u32(it, mask4);
-        it2 = vand_u32(it2, mask4);
-        tmp = vand_u32(tmp, mask4);
-        tmp2 = vand_u32(tmp2, mask4);
-        it = vadd_u32(it, tmp);
-        it2 = vadd_u32(it2, tmp2);
-
-        tmp = vshr_n_u32(it, 16);
-        tmp2 = vshr_n_u32(it2, 16);
-        it = vand_u32(it, mask5);
-        it2 = vand_u32(it2, mask5);
-        tmp = vand_u32(tmp, mask5);
-        tmp2 = vand_u32(tmp2, mask5);
-        it = vadd_u32(it, tmp);
-        it2 = vadd_u32(it2, tmp2);
-
-        rs = vadd_U32(rs, it);
-        rs = vadd_u32(rs, it2);
+        rs = vec_u256n_get_hamming_weight_i(it, it2, rs,  mask,mask2,mask3,mask4,mask5);
     }
 
     size_t r0 = vget_lane_u32(rs, 0);
@@ -126,6 +166,49 @@ size_t vec_u256n_get_humming_weight(size_t size, uint8_t *src)
 }
 #else
 {
+    uint32x2_t *p = (uint32x2_t*)src;
+
+    uint32x2_t rs;
+    rs = vxor_u32(rs, rs);
+
+     const uint32_t mask_value = 0x55555555;
+    const uint32_t mask2_value = 0x33333333;
+    const uint32_t mask3_value = 0x0F0F0F0F;
+    const uint32_t mask4_value = 0x00FF00FF;
+    const uint32_t mask5_value = 0x0000FFFF;
+    uint32x2_t mask = vld1_dup_u32(&mask_value);
+    uint32x2_t mask2 = vld1_dup_u32(&mask2_value);
+    uint32x2_t mask3 = vld1_dup_u32(&mask3_value);
+    uint32x2_t mask4 = vld1_dup_u32(&mask4_value);
+    uint32x2_t mask5 = vld1_dup_u32(&mask5_value);
+
+    for (size_t i = 0; i < units; ++i)
+    {
+        uint32x2_t it = p[i];
+
+        rs = vec_u256n_get_hamming_weight_i(it, rs,  mask,mask2,mask3,mask4,mask5);
+    }
+
+    size_t r0 = vget_lane_u32(rs, 0);
+    size_t r1 = vget_lane_u32(rs, 1);
+
+    size_t r = r0 + r1;
+
+    return r;
+}
+#endif
+
+size_t vec_u256n_get_hamming_distance(size_t size, uint8_t *src1, uint8_t *src2)
+#ifdef USE_128BIT_UNITS
+{
+    size_t units = size / 8 / 2;
+
+    uint32x2_t *p = (uint32x2_t*)src1;
+    uint32x2_t *q = (uint32x2_t*)src2;
+
+    uint32x2_t rs;
+    rs = vxor_u32(rs, rs);
+
     const uint32_t mask_value = 0x55555555;
     const uint32_t mask2_value = 0x33333333;
     const uint32_t mask3_value = 0x0F0F0F0F;
@@ -135,46 +218,52 @@ size_t vec_u256n_get_humming_weight(size_t size, uint8_t *src)
     uint32x2_t mask3 = vld1_dup_u32(&mask3_value);
     uint32x2_t mask4 = vld1_dup_u32(&mask4_value);
 
+    for (size_t i = 0; i < units; ++i)
+    {
+        uint32x2_t it = vld1_u32(p + i * 2);
+        uint32x2_t it2 = vld1_u32(p + i * 2 + 1);
+        uint32x2_t it_b = vld1_u32(q + i * 2);
+        uint32x2_t it2_b = vld1_u32(q + i * 2 + 1);
+
+        it = vxor_u32(it, it_b);
+        it2 = vxor_u32(it2, it2_b);
+
+        rs = vec_u256n_get_hamming_weight_i(it, it2, rs,  mask,mask2,mask3,mask4,mask5);
+    }
+
+    size_t r0 = vget_lane_u32(rs, 0);
+    size_t r1 = vget_lane_ui32(rs, 1);
+
+    size_t r = r0 + r1;
+
+    return r;
+}
+#else
+{
     uint32x2_t *p = (uint32x2_t*)src;
 
-    uint32x2_t rs = _mm_setzero_si64();
+    uint32x2_t rs;
+    rs = vxor_u32(rs, rs);
 
-    uint32x2_t mask = _mm_set1_pi32(0x55555555);
-    uint32x2_t mask2 = _mm_set1_pi32(0x33333333);
-    uint32x2_t mask3 = _mm_set1_pi32(0x0F0F0F0F);
-    uint32x2_t mask4 = _mm_set1_pi32(0x00FF00FF);
-    uint32x2_t mask5 = _mm_set1_pi32(0x0000FFFF);
+     const uint32_t mask_value = 0x55555555;
+    const uint32_t mask2_value = 0x33333333;
+    const uint32_t mask3_value = 0x0F0F0F0F;
+    const uint32_t mask4_value = 0x00FF00FF;
+    const uint32_t mask5_value = 0x0000FFFF;
+    uint32x2_t mask = vld1_dup_u32(&mask_value);
+    uint32x2_t mask2 = vld1_dup_u32(&mask2_value);
+    uint32x2_t mask3 = vld1_dup_u32(&mask3_value);
+    uint32x2_t mask4 = vld1_dup_u32(&mask4_value);
+    uint32x2_t mask5 = vld1_dup_u32(&mask5_value);
 
     for (size_t i = 0; i < units; ++i)
     {
-        uint32x2_t it = p[i];
+        uint32x2_t it = vld1_u32(p + i);
+        uint32x2_t it_b = vld1_u32(q + i);
 
-        uint32x2_t tmp = vshr_n_u32(it, 1);
-        it = vand_u32(it, mask);
-        tmp = vand_u32(tmp, mask);
-        it = vadd_u32(it, tmp);
+        it = vxor_u32(it, it_b);
 
-        tmp = vshr_n_u32(it, 2);
-        it = vand_u32(it, mask2);
-        tmp = vand_u32(tmp, mask2);
-        it = vadd_u32(it, tmp);
-
-        tmp = vshr_n_u32(it, 4);
-        it = vand_u32(it, mask3);
-        tmp = vand_u32(tmp, mask3);
-        it = vadd_u32(it, tmp);
-
-        tmp = vshr_n_u32(it, 8);
-        it = vand_u32(it, mask4);
-        tmp = vand_u32(tmp, mask4);
-        it = vadd_u32(it, tmp);
-
-        tmp = vshr_n_u32(it, 16);
-        it = vand_u32(it, mask5);
-        tmp = vand_u32(tmp, mask5);
-        it = vadd_u32(it, tmp);
-
-        rs = vadd_u32(rs, it);
+        rs = vec_u256n_get_hamming_weight_i(it, rs,  mask,mask2,mask3,mask4,mask5);
     }
 
     size_t r0 = vget_lane_u32(rs, 0);

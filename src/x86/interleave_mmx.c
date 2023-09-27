@@ -72,6 +72,7 @@ static int vec_i32x8xn_set_col2_(size_t input_size, int32_t *src1, int32_t *src2
         q[i * 8 + 4] = it3;
     }
 
+    ANY_EMMS();
     return 1;
 }
 int  vec_i16x16xn_set_col(size_t input_size, int16_t *src, int16_t *dst);

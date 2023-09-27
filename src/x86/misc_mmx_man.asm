@@ -2,6 +2,7 @@
 
 ; /* hamming weight */
 
+%ifndef REMOVE_DATA_SECTION
 section .data
 align 8
 mask_u16x4_5555: dd 0x55555555, 0x55555555
@@ -13,6 +14,7 @@ align 8
 mask_u16x4_00FF: dd 0x00FF00FF, 0x00FF00FF
 align 8
 mask_u32x2_0000FFFF: dd 0x0000FFFF, 0x0000FFFF
+%endif
 section .text
 
 ; manually compiled version
@@ -21,19 +23,38 @@ global vec_u256n_get_hamming_weight
 vec_u256n_get_hamming_weight:
 %ifdef USE_128BIT_UNITS
 ; {
+%ifdef REMOVE_DATA_SECTION
+    mov eax, 0x55555555
+    mov edx, 0x33333333
+    movd mm5, eax
+    movd mm6, edx
+    psllq mm5, 32
+    psllq mm6, 32
+    movd mm5, eax
+    movd mm6, edx
+
+    mov eax, 0x0F0F0F0F
+    movd mm7, eax
+    psllq mm7, 32
+    movd mm7, eax
+%endif
+
     ; size_t units = size / 16;
     mov edx, [esp + 4]
-    shr edx, 4
 
     ; __m64 *p = (__m64*)src;
     mov eax, [esp + 8]
 
+    shr edx, 4
+
     ; __m64 rs = _mm_setzero_si64();
     pxor mm0, mm0
 
+%ifndef REMOVE_DATA_SECTION
     movq mm5, [mask_u16x4_5555]
     movq mm6, [mask_u16x4_3333]
     movq mm7, [mask_u16x4_0F0F]
+%endif
 
     ; for (size_t i = 0; i < units; ++i)
     or edx, edx
@@ -44,7 +65,7 @@ vec_u256n_get_hamming_weight:
         ; __m64 it2 = p[i * 2 + 1];
         movq mm1, [eax]
         movq mm3, [eax + 8]
-
+%macro vec_u256n_get_hamming_weight_i 0
         ; __m64 tmp = _mm_srli_si64(it, 1);
         ; __m64 tmp2 = _mm_srli_si64(it2, 1);
         ; it = _mm_and_si64(it, mask);
@@ -111,6 +132,8 @@ vec_u256n_get_hamming_weight:
         ; rs = _mm_add_pi32(rs, it);
         paddd mm0, mm1
         paddd mm0, mm3
+%endmacro
+        vec_u256n_get_hamming_weight_i
     ; }
         add eax, 16
         sub edx, 1
@@ -130,21 +153,49 @@ vec_u256n_get_hamming_weight:
 ; }
 %else
 ; {
+%ifdef REMOVE_DATA_SECTION
+    mov eax, 0x55555555
+    mov edx, 0x33333333
+    movd mm3, eax
+    movd mm4, edx
+    psllq mm3, 32
+    psllq mm4, 32
+    movd mm3, eax
+    movd mm4, edx
+
+    mov eax, 0x0F0F0F0F
+    mov edx, 0x00FF00FF
+    movd mm5, eax
+    movd mm6, edx
+    psllq mm5, 32
+    psllq mm6, 32
+    movd mm5, eax
+    movd mm6, edx
+
+    mov eax, 0x0000FFFF
+    movd mm7, eax
+    psllq mm7, 32
+    movd mm7, eax
+%endif
+
     ; size_t units = size / 8;
     mov edx, [esp + 4]
-    shr edx, 3
 
     ; __m64 *p = (__m64*)src;
     mov eax, [esp + 8]
 
+    shr edx, 3
+
     ; __m64 rs = _mm_setzero_si64();
     pxor mm0, mm0
 
+%ifndef REMOVE_DATA_SECTION
     movq mm3, [mask_u16x4_5555]
     movq mm4, [mask_u16x4_3333]
     movq mm5, [mask_u16x4_0F0F]
     movq mm6, [mask_u16x4_00FF]
     movq mm7, [mask_u32x2_0000FFFF]
+%endif
 
     ; for (size_t i = 0; i < units; ++i)
     or edx, edx
@@ -153,7 +204,7 @@ vec_u256n_get_hamming_weight:
     ;{
         ; __m64 it = p[i];
         movq mm1, [eax]
-
+%macro vec_u256n_get_hamming_weight_i 0
         ; __m64 tmp = _mm_srli_si64(it, 1);
         ; it = _mm_and_si64(it, mask);
         ; tmp = _mm_and_si64(tmp, mask);
@@ -190,6 +241,8 @@ vec_u256n_get_hamming_weight:
 
         ; rs = _mm_add_pi32(rs, it);
         paddd mm0, mm1
+%endmacro
+        vec_u256n_get_hamming_weight_i
     ; }
         add eax, 8
         sub edx, 1
@@ -209,3 +262,163 @@ vec_u256n_get_hamming_weight:
 ; }
 %endif
 
+
+; size_t vec_u256n_get_hamming_distance(size_t size, uint8_t *src1, uint8_t *src2)
+global vec_u256n_get_hamming_distance
+vec_u256n_get_hamming_distance:
+%ifdef USE_128BIT_UNITS
+; {
+    push ecx
+
+%ifdef REMOVE_DATA_SECTION
+    mov eax, 0x55555555
+    mov edx, 0x33333333
+    mov ecx, 0x0F0F0F0F
+    movd mm5, eax
+    movd mm6, edx
+    movd mm7, ecx
+    psllq mm5, 32
+    psllq mm6, 32
+    psllq mm7, 32
+    movd mm5, eax
+    movd mm6, edx
+    movd mm7, ecx
+%endif
+
+    ; size_t units = size / 16;
+    mov ecx, [esp + 8]
+
+    ; __m64 *p = (__m64*)src1;
+    mov eax, [esp + 16]
+
+    ; __m64 *q = (__m64*)src2;
+    mov edx, [esp + 20]
+
+    shr ecx, 4
+
+    ; __m64 rs = _mm_setzero_si64();
+    pxor mm0, mm0
+
+%ifndef REMOVE_DATA_SECTION
+    movq mm5, [mask_u16x4_5555]
+    movq mm6, [mask_u16x4_3333]
+    movq mm7, [mask_u16x4_0F0F]
+%endif
+
+    ; for (size_t i = 0; i < units; ++i)
+    or ecx, ecx
+    jz .loop_end
+.loop_start:
+    ;{
+        ; __m64 it = p[i * 2];
+        ; __m64 it2 = p[i * 2 + 1];
+        ; __m64 it_b = q[i * 2];
+        ; __m64 it2_b = q[i * 2 + 1];
+        movq mm1, [eax]
+        movq mm2, [edx]
+        movq mm3, [eax + 8]
+        movq mm4, [edx + 8]
+
+        pxor mm1, mm2
+        pxor mm3, mm4
+
+        vec_u256n_get_hamming_weight_i
+    ; }
+        add eax, 16
+        add edx, 16
+        sub ecx, 1
+        jnz .loop_start
+.loop_end:
+
+    movd eax, mm0
+    psrlq mm0, 32
+    movd edx, mm0
+
+    add eax, edx
+
+    emms
+
+    ; return r;
+    pop ecx
+    ret
+; }
+%else
+; {
+    push ecx
+
+%ifdef REMOVE_DATA_SECTION
+    mov eax, 0x55555555
+    mov edx, 0x33333333
+    movd mm3, eax
+    movd mm4, edx
+    psllq mm3, 32
+    psllq mm4, 32
+    movd mm3, eax
+    movd mm4, edx
+
+    mov eax, 0x0F0F0F0F
+    mov edx, 0x00FF00FF
+    mov ecx, 0x0000FFFF
+    movd mm5, eax
+    movd mm6, edx
+    movd mm7, ecx
+    psllq mm5, 32
+    psllq mm6, 32
+    psllq mm7, 32
+    movd mm5, eax
+    movd mm6, edx
+    movd mm7, ecx
+%endif
+
+    ; size_t units = size / 8;
+    mov ecx, [esp + 8]
+
+    ; __m64 *p = (__m64*)src1;
+    mov eax, [esp + 16]
+
+    ; __m64 *q = (__m64*)src2;
+    mov edx, [esp + 20]
+
+    shr ecx, 3
+
+%ifndef REMOVE_DATA_SECTION
+    movq mm3, [mask_u16x4_5555]
+    movq mm4, [mask_u16x4_3333]
+    movq mm5, [mask_u16x4_0F0F]
+    movq mm6, [mask_u16x4_00FF]
+    movq mm7, [mask_u32x2_0000FFFF]
+%endif
+
+    ; for (size_t i = 0; i < units; ++i)
+    or ecx, ecx
+    jz .loop_end
+.loop_start:
+    ;{
+        ; __m64 it = p[i];
+        ; __m64 it_b = q[i];
+        movq mm1, [eax]
+        movq mm2, [edx]
+
+        pxor mm1, mm2
+
+        vec_u256n_get_hamming_weight_i
+    ; }
+        add eax, 8
+        add edx, 8
+        sub ecx, 1
+        jnz .loop_start
+.loop_end:
+
+    movd eax, mm0
+    psrlq mm0, 32
+    movd edx, mm0
+
+    add eax, edx
+
+    emms
+
+    ; return r;
+    pop ecx
+    ret
+; }
+%endif

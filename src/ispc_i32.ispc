@@ -10,12 +10,12 @@
 #endif
 
 
-uniform int32 reduce_amp(int32 src)
+uniform int32 reduce_range(int32 src)
 {
     return reduce_max(src) - reduce_min(src);
 }
 
-uniform int32 reduce_amp(uniform int32 src[], uniform target_size_t offsetBase)
+uniform int32 reduce_range(uniform int32 src[], uniform target_size_t offsetBase)
 {
     int32 it = src[offsetBase + programIndex];
 
@@ -261,7 +261,7 @@ export void vec_i32v8n_get_minmax(uniform target_size_t size, uniform int32 src[
 
 
 // get width of min ... max
-export uniform int32 vec_i32v8n_amp(uniform target_size_t size, uniform int32 src[])
+export uniform int32 vec_i32v8n_get_range(uniform target_size_t size, uniform int32 src[])
 {
     uniform int32 min_result;
     uniform int32 max_result;
@@ -272,168 +272,7 @@ export uniform int32 vec_i32v8n_amp(uniform target_size_t size, uniform int32 sr
 }
 
 // generates longer code
-export uniform int32 vec_i32v8n_amp_2(uniform target_size_t size, uniform int32 src[])
+export uniform int32 vec_i32v8n_get_range_2(uniform target_size_t size, uniform int32 src[])
 {
     return vec_i32v8n_max(size, src) - vec_i32v8n_min(size, src);
 }
-
-
-
-
-uint32 mask_overlap_(int32 a)
-{
-    uint32 mask = 0;
-
-    for (uniform int i = 1; i < TARGET_WIDTH; ++i)
-    {
-        mask |= select(a == rotate(a, i), 0xFFFFFFFF, 0);
-    }
-
-    return mask;
-}
-
-uint32 mask_overlap_(int32 x, int32 a)
-{
-    uint32 mask = 0;
-
-    for (uniform int i = 0; i < TARGET_WIDTH; ++i)
-    {
-        mask |= select(x == rotate(a, i), 0xFFFFFFFF, 0);
-    }
-
-    return mask;
-}
-
-export uniform bool vec_i32v8n_find_overlap(uniform int32 a[], uniform target_size_t size)
-{
-    uint32 mask = 0;
-    
-    for (uniform target_size_t i = 0; i < size; i += TARGET_WIDTH)
-    {
-        int32 x = a[i + programIndex];
-
-        for (uniform target_size_t j = 0; j < i; j += TARGET_WIDTH)
-        {
-            mask |= mask_overlap_(x, a[j + programIndex]);
-        }
-
-        mask |= mask_overlap_(x);
-
-        for (uniform target_size_t j = i + TARGET_WIDTH; j < size; j += TARGET_WIDTH)
-        {
-            mask |= mask_overlap_(x, a[j + programIndex]);
-        }
-    }
-
-    bool r = mask != 0;
-
-    return any(r);
-}
-
-
-
-bool mask_overlap2_(int32 a)
-{
-    bool mask = 0;
-
-    for (uniform int i = 1; i < TARGET_WIDTH; ++i)
-    {
-        mask |= a == rotate(a, i);
-    }
-
-    return mask;
-}
-
-bool mask_overlap2_(int32 x, int32 a)
-{
-    bool mask = 0;
-
-    for (uniform int i = 0; i < TARGET_WIDTH; ++i)
-    {
-        mask |= x == rotate(a, i);
-    }
-
-    return mask;
-}
-
-export uniform bool vec_i16v16n_find_overlap2(uniform int32 a[], uniform target_size_t size)
-{
-    bool mask = 0;
-    
-    for (uniform target_size_t i = 0; i < size; i += TARGET_WIDTH)
-    {
-        int32 x = a[i + programIndex];
-
-        for (uniform target_size_t j = 0; j < i; j += TARGET_WIDTH)
-        {
-            mask |= mask_overlap2_(x, a[j + programIndex]);
-
-            if (any(mask)) return true;
-        }
-
-        mask |= mask_overlap2_(x);
-
-        if (any(mask)) return true;
-
-        for (uniform target_size_t j = i + TARGET_WIDTH; j < size; j += TARGET_WIDTH)
-        {
-            mask |= mask_overlap2_(x, a[j + programIndex]);
-
-            if (any(mask)) return true;
-        }
-    }
-
-    return any(mask);
-}
-
-
-inline int32 count_overlap_(int32 a)
-{
-    int32 r = 0;
-
-    for (uniform int i = 1; i < TARGET_WIDTH; ++i)
-    {
-        r |= select(a == rotate(a, i), 1, 0);
-    }
-
-    return r;
-}
-
-inline int32 count_overlap_(int32 x, int32 a)
-{
-    int32 r = 0;
-
-    for (uniform int i = 0; i < TARGET_WIDTH; ++i)
-    {
-        r |= select(x == rotate(a, i), 1, 0);
-    }
-
-    return r;
-}
-
-// broken. pivot points counted number again.
-export uniform int vec_i32v8n_count_overlap(uniform int32 a[], uniform target_size_t size)
-{
-    int32 r = 0;
-    
-    for (uniform target_size_t i = 0; i < size; i += TARGET_WIDTH)
-    {
-        int32 x = a[i + programIndex];
-
-        for (uniform target_size_t j = 0; j < i; j += TARGET_WIDTH)
-        {
-            r += count_overlap_(x, a[j + programIndex]);
-        }
-
-        r += count_overlap_(x);
-
-        for (uniform target_size_t j = i + TARGET_WIDTH; j < size; j += TARGET_WIDTH)
-        {
-            r += count_overlap_(x, a[j + programIndex]);
-        }
-    }
-
-    return reduce_add(r);
-}
-
-

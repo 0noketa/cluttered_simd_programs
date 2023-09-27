@@ -31,6 +31,14 @@ int8_t vec_i8v32n_get_min(size_t size, int8_t *src);
 int8_t vec_i8v32n_get_max(size_t size, int8_t *src);
 void vec_i8v32n_get_minmax(size_t size, int8_t *src, int8_t *out_min, int8_t *out_max);
 
+int32_t vec_i32v8n_get_range(size_t size, int32_t *src);
+int16_t vec_i16v16n_get_range(size_t size, int16_t *src);
+int8_t vec_i8v32n_get_range(size_t size, int8_t *src);
+
+int32_t vec_i32v8n_get_avg(size_t size, int32_t *src);
+int16_t vec_i16v16n_get_avg(size_t size, int16_t *src);
+int8_t vec_i8v32n_get_avg(size_t size, int8_t *src);
+
 
 void  vec_i16v16n_abs(size_t size, int16_t *src);
 
@@ -63,10 +71,16 @@ void vec_u256n_ror(size_t size, uint8_t *src, int n, uint8_t *dst);
 
 /* hamming weight */
 
-size_t vec_u256n_safe_size_for_gethammingweight();
 size_t vec_u256n_get_hamming_weight(size_t size, uint8_t *src);
-size_t vec_u512n_safe_size_for_gethammingweight();
-size_t vec_u512n_get_hamming_weight(size_t size, uint8_t *src);
+size_t vec_u256n_get_hamming_distance(size_t size, uint8_t *src1, uint8_t *src2);
+size_t vec_i32v8n_get_hamming_distance(size_t size, int32_t *src1, int32_t *src2);
+size_t vec_i16v16n_get_hamming_distance(size_t size, int16_t *src1, int16_t *src2);
+size_t vec_i8v32n_get_hamming_distance(size_t size, int8_t *src1, int8_t *src2);
+size_t vec_i32v8n_get_manhattan_distance(size_t size, int32_t *src1, int32_t *src2);
+size_t vec_i16v16n_get_manhattan_distance(size_t size, int16_t *src1, int16_t *src2);
+size_t vec_i8v32n_get_manhattan_distance(size_t size, int8_t *src1, int8_t *src2);
+int vec_i16x16xn_get_manhattan_distance(size_t size, int16_t *src1, int16_t *src2, int32_t *dst);
+int vec_i8x32xn_get_manhattan_distance(size_t size, int8_t *src1, int8_t *src2, int16_t *dst);
 
 
 /* sum */
