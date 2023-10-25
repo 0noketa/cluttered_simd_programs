@@ -203,7 +203,7 @@ int base64_encode(size_t size, const uint8_t *src, uint8_t *dst)
     size_t src_base0 = units0 * 12;
     size_t dst_base0 = units0 * 16;
 
-    if (!base64_3n_encode(size % 12, src + src_base0, dst + dst_base0)) return 0;
+    if (!base64_3n_encode(size % 3, src + src_base0, dst + dst_base0)) return 0;
 
     size_t units = size / 3;
     size_t src_base = units * 3;

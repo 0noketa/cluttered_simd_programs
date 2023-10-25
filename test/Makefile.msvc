@@ -184,8 +184,24 @@ avx2_hw_2:
 popcnt_hw:
 	$(CC) /O2 /arch:AVX2 /DUSE_POPCNT /Fepopcnt_hw.exe test_hw.c $(SRC_DIR)\x86/misc_avx2.c
 
+generic_hd16:
+	$(CC) /O2 /arch:IA32 /Fegeneric_hd16.exe test_hd16.c $(SRC_DIR)\generic/misc.c
+generic_hd16_x4:
+	$(CC) /O2 /arch:IA32 /openmp /Qpar /Fegeneric_hd16_x4.exe test_hd16.c $(SRC_DIR)\generic/misc.c
+mmx_hd16:
+	$(CC) /O2 /arch:SSE /Femmx_hd16.exe test_hd16.c $(SRC_DIR)\x86/misc_mmx.c
+
+generic_hd8:
+	$(CC) /O2 /arch:IA32 /Fegeneric_hd8.exe test_hd8.c $(SRC_DIR)\generic/misc.c
+generic_hd8_x4:
+	$(CC) /O2 /arch:IA32 /openmp /Qpar /Fegeneric_hd8_x4.exe test_hd8.c $(SRC_DIR)\generic/misc.c
+mmx_hd8:
+	$(CC) /O2 /arch:SSE /Femmx_hd8.exe test_hd8.c $(SRC_DIR)\x86/misc_mmx.c
+
 generic_rev:
 	$(CC) /O2 /arch:IA32 /Fegeneric_rev.exe test_rev.c $(SRC_DIR)\generic/sort.c
+generic_rev_x4:
+	$(CC) /O2 /arch:IA32 /openmp /Qpar /Fegeneric_rev_x4.exe test_rev.c $(SRC_DIR)\generic/sort.c
 x86_rev:
 	$(NASM) $(SRC_DIR)\x86_generic.asm
 	$(CC) /O2 /arch:IA32 /Fex86_rev.exe test_rev.c $(SRC_DIR)\x86_generic.o
@@ -210,19 +226,21 @@ sse2_rev8:
 
 generic_rev32:
 	$(CC) /O2 /arch:IA32 /Fegeneric_rev32.exe test_rev32.c $(SRC_DIR)\generic/sort.c
+generic_rev32_x4:
+	$(CC) /O2 /arch:IA32 /openmp /Qpar /Fegeneric_rev32_x4.exe test_rev32.c $(SRC_DIR)\generic/sort.c
 x86_rev32:
 	$(NASM) $(SRC_DIR)\x86_generic.asm
-	$(CC) /O2 /arch:IA32 /Fex86_rev32.exe test_rev32.c $(SRC_DIR)\x86_generic.o
+	$(CC) /O2 /arch:IA32 /Fex86_rev32.exe test_rev32.c $(SRC_DIR)\x86_generic.obj
 mmx_rev32:
-	$(CC) /O2 /arch:SSE /Femmx_rev32.exe test_rev32.c $(SRC_DIR)\x86_mmx.c
+	$(CC) /O2 /arch:SSE /Femmx_rev32.exe test_rev32.c $(SRC_DIR)\x86/sort_mmx.c
 x86_3dnow_rev32:
-	$(CC) /O2 -m3dnow -march=athlon-xp -mtune=athlon-xp /Fex86_3dnow_rev32.exe test_rev32.c $(SRC_DIR)\x86_3dnow.c
+	$(CC) /O2 -m3dnow -march=athlon-xp -mtune=athlon-xp /Fex86_3dnow_rev32.exe test_rev32.c $(SRC_DIR)\x86/sort_3dnow.c
 sse2_rev32:
-	$(CC) /O2 /arch:SSE2 /Fesse2_rev32.exe test_rev32.c $(SRC_DIR)\x86_sse2.c
+	$(CC) /O2 /arch:SSE2 /Fesse2_rev32.exe test_rev32.c $(SRC_DIR)\x86/sort_sse2.c
 avx2_rev32:
-	$(CC) /O2 /arch:AVX2 /Feavx2_rev32.exe test_rev32.c $(SRC_DIR)\x86_avx2.c
-avx2_nocross_rev32:
-	$(CC) /O2 /arch:AVX2 /DNO_CROSS_FETCH /Feavx2_nocross_rev32.exe test_rev32.c $(SRC_DIR)\x86_avx2.c
+	$(CC) /O2 /arch:AVX2 /Feavx2_rev32.exe test_rev32.c $(SRC_DIR)\x86/sort_avx2.c
+avx2_permute_rev32:
+	$(CC) /O2 /arch:AVX2 /DUSE_PERMUTE /Feavx2_permute_rev32.exe test_rev32.c $(SRC_DIR)\x86/sort_avx2.c
 
 generic_shift:
 	$(CC) /O2 /arch:IA32 /Fegeneric_shift.exe test_shift.c $(SRC_DIR)\generic/sort.c
@@ -298,6 +316,8 @@ $(SRC_DIR)/generic/base64_12bit_encoder.c:
 
 generic_base64e:
 	$(CC) /O2 /arch:IA32  /Fegeneric_base64e.exe base64e.c $(SRC_DIR)/generic/base64_u32.c
+generic_base64e_u8:
+	$(CC) /O2 /arch:IA32  /Fegeneric_base64e_u8.exe base64e.c $(SRC_DIR)/generic/base64_u8.c
 generic_base64e_x4:
 	$(CC) /O2 /arch:IA32  /openmp /Qpar  /Fegeneric_base64e_x4.exe base64e.c $(SRC_DIR)/generic/base64_u32.c
 lut_base64e:

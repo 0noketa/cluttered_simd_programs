@@ -45,7 +45,7 @@ for AVX2 YMM, srl/sll shifts every 128bit lane, not entire 256bit.
 ``` c
 _mm_srli_si64(x, 1);  // 1-bit
 _mm_srli_si128(x, 1);  // 1-byte
-_mm256_srli_si256(x, 1);  // 1-byte. lowest byte on higher lane will leave.
+_mm256_srli_si256(x, 1);  // 1-byte. as 128x2. lowest byte on higher lane will leave.
 ```
 
 in srl/sll for "pi", every lane shares COUNT. they use just one COUNT stored on lowest lane.

@@ -137,6 +137,8 @@ popcnt_hw:
 
 generic_rev:
 	$(CC) -Ofast -ogeneric_rev.exe test_rev.c $(SRC_DIR)/generic/sort.c
+generic_rev_x4:
+	$(CC) -Ofast -fopenmp -ogeneric_rev_x4.exe test_rev.c $(SRC_DIR)/generic/sort.c
 x86_rev:
 	$(NASM) $(SRC_DIR)/x86/sort_generic.asm
 	$(CC) -Ofast -ox86_rev.exe test_rev.c $(SRC_DIR)/x86_generic.o
@@ -161,6 +163,8 @@ sse2_rev8:
 
 generic_rev32:
 	$(CC) -Ofast -ogeneric_rev32.exe test_rev32.c $(SRC_DIR)/generic/sort.c
+generic_rev32_x4:
+	$(CC) -Ofast -fopenmp -ogeneric_rev32_x4.exe test_rev32.c $(SRC_DIR)/generic/sort.c
 x86_rev32:
 	$(NASM) $(SRC_DIR)/x86_generic.asm
 	$(CC) -Ofast -ox86_rev32.exe test_rev32.c $(SRC_DIR)/x86_generic.o
@@ -172,8 +176,8 @@ sse2_rev32:
 	$(CC) -Os -msse2 -osse2_rev32.exe test_rev32.c $(SRC_DIR)/x86/sort_sse2.c
 avx2_rev32:
 	$(CC) -Os -mavx2 -oavx2_rev32.exe test_rev32.c $(SRC_DIR)/x86/sort_avx2.c
-avx2_nocross_rev32:
-	$(CC) -Os -mavx2 -DNO_CROSS_FETCH -oavx2_nocross_rev32.exe test_rev32.c $(SRC_DIR)/x86/sort_avx2.c
+avx2_permute_rev32:
+	$(CC) -Os -mavx2 -DUSE_PERMUTE -oavx2_permute_rev32.exe test_rev32.c $(SRC_DIR)/x86/sort_avx2.c
 
 generic_shift:
 	$(CC) -Ofast -ogeneric_shift.exe test_shift.c $(SRC_DIR)/generic/sort.c

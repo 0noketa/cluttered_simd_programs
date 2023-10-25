@@ -60,5 +60,26 @@ lut_x4     0m0.823s
 sse2       0m0.971s
 avx2       0m0.648s
 popcnt     0m0.680s
+* 2023-09-28  Core-i5-1235U  DDR4(3200MHz)  msvc(/O2)  x64
+* x86
+generic      0m1.402s
+generic_x4   0m0.788s
+lut          0m0.538s
+lut_x4       0m0.569s
+mmx128       0m2.005s
+mmx64        0m1.825s
+sse2         0m0.524s
+avx2         0m0.368s
+popcnt       0m0.396s
+* x64
+generic      0m1.741s
+generic_x4   0m0.758s
+generic_x8   0m0.602s
+lut          0m0.663s
+lut_x4       0m0.553s
+lut_x8       0m0.537s
+sse2         0m0.553s
+avx2         0m0.255s
+popcnt       0m0.274s
 
 **/

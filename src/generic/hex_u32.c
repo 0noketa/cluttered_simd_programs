@@ -15,7 +15,7 @@ static const uint32_t *half2lower = {
     '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'
 };
 
-static uint8_t col2half[256] = {
+static uint8_t col2half_[256] = {
      0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0,
      0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0,
      0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0,
@@ -28,6 +28,7 @@ static uint8_t col2half[256] = {
 
      0,
 };
+#define col2half(n) col2half_[n]
 #else
 static const uint8_t *half2upper = "0123456789ABCDEF";
 static const uint8_t *half2lower = "0123456789abcdef";
@@ -169,17 +170,6 @@ int base16_8n_decode(size_t input_size, const uint8_t *src, uint8_t *dst)
         uint32_t c6 = (unit2 >> 16) & 0xFF;
         uint32_t c7 = (unit2 >> 24) & 0xFF;
 
-#ifdef USE_LUT
-        c0 = col2half[c0];
-        c1 = col2half[c1];
-        c2 = col2half[c2];
-        c3 = col2half[c3];
-
-        c4 = col2half[c4];
-        c5 = col2half[c5];
-        c6 = col2half[c6];
-        c7 = col2half[c7];
-#else
         c0 = col2half(c0);
         c1 = col2half(c1);
         c2 = col2half(c2);
@@ -189,7 +179,6 @@ int base16_8n_decode(size_t input_size, const uint8_t *src, uint8_t *dst)
         c5 = col2half(c5);
         c6 = col2half(c6);
         c7 = col2half(c7);
-#endif
 
         c0 = (c0 << 4) | c1;
         c2 = (c2 << 4) | c3;

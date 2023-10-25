@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <mmintrin.h>
 
-#include "../include/simd_tools.h"
+#include "../../include/sort.h"
 
 #ifdef __3dNOW__
 #define ANY_EMMS _m_femms
@@ -16,23 +16,20 @@
 
 /* reverse */
 
-void vec_i32v8n_reverse(size_t size, int32_t *dat)
+void vec_i32v8n_inplace_reverse(size_t size, int32_t *data)
 ;
 
-void vec_i32v8n_get_reversed(size_t size, int32_t *src, int32_t *dst)
+void vec_i32v8n_reverse(size_t size, const int32_t *src, int32_t *dst)
 {
 	size_t units = size / 2;
-	__m64 *p = (__m64*)src;
+	size_t units2 = units / 2;
+	const __m64 *p = (const __m64*)src;
 	__m64 *q = (__m64*)dst;
 
-	ANY_EMMS();
-	size_t i = 0;
-	size_t j = units - 1;
-
-	while (i < j)
+	for (int i = 0; i < units2; ++i)
 	{
-		__m64 left = p[i];
-		__m64 right = p[j];
+		__m64 left = p[i * 2];
+		__m64 right = p[i * 2 + 1];
 
 #ifdef __3dNOW__
 		left = _m_pswapd(left);
@@ -47,13 +44,13 @@ void vec_i32v8n_get_reversed(size_t size, int32_t *src, int32_t *dst)
 		right = _mm_or_si64(right_left, right_right);
 #endif
 
-		q[i++] = right;
-		q[j--] = left;
+		q[units - 1 - i * 2 - 1] = right;
+		q[units - 1 - i * 2] = left;
 	}
 
-	if (units & 1)
+	if (units2 & 1)
 	{
-		__m64 it = p[i];
+		__m64 it = p[units2];
 
 #ifdef __3dNOW__
 		it = _m_pswapd(it);
@@ -64,26 +61,23 @@ void vec_i32v8n_get_reversed(size_t size, int32_t *src, int32_t *dst)
 		it = _mm_or_si64(left, right);
 #endif
 
-		q[i] = it;
+		q[units2] = it;
 	}
 
 	ANY_EMMS();
 }
 // current version is slow as generic version is.
-void vec_i16v16n_get_reversed(size_t size, int16_t *src, int16_t *dst)
+void vec_i16v16n_reverse(size_t size, const int16_t *src, int16_t *dst)
 {
 	size_t units = size / 4;
-	__m64 *p = (__m64*)src;
+	size_t units2 = units / 2;
+	const __m64 *p = (const __m64*)src;
 	__m64 *q = (__m64*)dst;
 
-	ANY_EMMS();
-	size_t i = 0;
-	size_t j = units - 1;
-
-	while (i < j)
+	for (int i = 0; i < units2; ++i)
 	{
-		__m64 left = p[i];
-		__m64 right = p[j];
+		__m64 left = p[i * 2];
+		__m64 right = p[i * 2 + 1];
 
 		// every var name means bytes' order
 		// mmx has not int64
@@ -109,13 +103,13 @@ void vec_i16v16n_get_reversed(size_t size, int16_t *src, int16_t *dst)
 		left = _mm_or_si64(left_left, left_right);
 		right = _mm_or_si64(right_left, right_right);
 
-		q[i++] = right;
-		q[j--] = left;
+		q[units - 1 - i * 2 - 1] = right;
+		q[units - 1 - i * 2] = left;
 	}
 
-	if (units & 1)
+	if (units2 & 1)
 	{
-		__m64 it = p[i];
+		__m64 it = p[units2];
 
 #ifdef __3dNOW__
 		it = _m_pswapd(it);
@@ -131,25 +125,22 @@ void vec_i16v16n_get_reversed(size_t size, int16_t *src, int16_t *dst)
 
 		it = _mm_or_si64(left, right);
 
-		q[i] = it;
+		q[units2] = it;
 	}
 
 	ANY_EMMS();
 }
-void vec_i8v32n_get_reversed(size_t size, int8_t *src, int8_t *dst)
+void vec_i8v32n_reverse(size_t size, const int8_t *src, int8_t *dst)
 {
 	size_t units = size / 8;
-	__m64 *p = (__m64*)src;
+	size_t units2 = units / 2;
+	const __m64 *p = (const __m64*)src;
 	__m64 *q = (__m64*)dst;
 
-	ANY_EMMS();
-	size_t i = 0;
-	size_t j = units - 1;
-
-	while (i < j)
+	for (int i = 0; i < units2; ++i)
 	{
-		__m64 left = p[i];
-		__m64 right = p[j];
+		__m64 left = p[i * 2];
+		__m64 right = p[i * 2 + 1];
 
 		// every var name means bytes' order
 		// mmx has not int64
@@ -183,13 +174,13 @@ void vec_i8v32n_get_reversed(size_t size, int8_t *src, int8_t *dst)
 		left = _mm_or_si64(left_left, left_right);
 		right = _mm_or_si64(right_left, right_right);
 
-		q[i++] = right;
-		q[j--] = left;
+		q[units - 1 - i * 2 - 1] = right;
+		q[units - 1 - i * 2] = left;
 	}
 
-	if (units & 1)
+	if (units2 & 1)
 	{
-		__m64 it = p[i];
+		__m64 it = p[units2];
 
 #ifdef __3dNOW__
 		it = _m_pswapd(it);
@@ -210,22 +201,22 @@ void vec_i8v32n_get_reversed(size_t size, int8_t *src, int8_t *dst)
 
 		it = _mm_or_si64(left, right);
 
-		q[i] = it;
+		q[units2] = it;
 	}
 
 	ANY_EMMS();
 }
 
-void bits256n_get_reversed(size_t size, uint8_t *src, uint8_t *dst)
+void bits256n_reverse(size_t size, const uint8_t *src, uint8_t *dst)
 ;
 
 
 /* shift */
 
-void bits256n_shl1(size_t size, uint8_t *src, uint8_t *dst)
+void bits256n_shl1(size_t size, const uint8_t *src, uint8_t *dst)
 {
     size_t units = size / 8;
-    __m64 *p = (__m64*)src;
+    const __m64 *p = (const __m64*)src;
     __m64 *q = (__m64*)dst;
 
     __m64 mask_high = _mm_set1_pi8(UINT8_MAX - 1);
@@ -264,10 +255,10 @@ void bits256n_shl1(size_t size, uint8_t *src, uint8_t *dst)
 
     ANY_EMMS();
 }
-void bits256n_shl8(size_t size, uint8_t *src, uint8_t *dst)
+void bits256n_shl8(size_t size, const uint8_t *src, uint8_t *dst)
 {
     size_t units = size / 4;
-    __m64 *p = (__m64*)src;
+    const __m64 *p = (const __m64*)src;
     __m64 *q = (__m64*)dst;
 
     __m64 it0 = p[0];
@@ -287,10 +278,10 @@ void bits256n_shl8(size_t size, uint8_t *src, uint8_t *dst)
 
     ANY_EMMS();
 }
-void bits256n_shl32(size_t size, uint8_t *src, uint8_t *dst)
+void bits256n_shl32(size_t size, const uint8_t *src, uint8_t *dst)
 {
     size_t units = size / 4;
-    __m64 *p = (__m64*)src;
+    const __m64 *p = (const __m64*)src;
     __m64 *q = (__m64*)dst;
 
     __m64 it0 = p[0];
@@ -311,10 +302,10 @@ void bits256n_shl32(size_t size, uint8_t *src, uint8_t *dst)
     ANY_EMMS();
 }
 
-void bits256n_shr8(size_t size, uint8_t *src, uint8_t *dst)
+void bits256n_shr8(size_t size, const uint8_t *src, uint8_t *dst)
 {
     size_t units = size / 4;
-    __m64 *p = (__m64*)src;
+    const __m64 *p = (const __m64*)src;
     __m64 *q = (__m64*)dst;
 
     __m64 it0 = p[units - 1];
@@ -334,10 +325,10 @@ void bits256n_shr8(size_t size, uint8_t *src, uint8_t *dst)
 
     ANY_EMMS();
 }
-void bits256n_shr32(size_t size, uint8_t *src, uint8_t *dst)
+void bits256n_shr32(size_t size, const uint8_t *src, uint8_t *dst)
 {
     size_t units = size / 4;
-    __m64 *p = (__m64*)src;
+    const __m64 *p = (const __m64*)src;
     __m64 *q = (__m64*)dst;
 
     __m64 it0 = p[units - 1];
@@ -358,41 +349,41 @@ void bits256n_shr32(size_t size, uint8_t *src, uint8_t *dst)
     ANY_EMMS();
 }
 
-void bits256n_rol1(size_t size, uint8_t *src, uint8_t *dst)
+void bits256n_rol1(size_t size, const uint8_t *src, uint8_t *dst)
 {
     bits256n_rol8(size, src, dst);
 
     dst[size - 1] = src[0] >> 7;
 }
-void bits256n_rol8(size_t size, uint8_t *src, uint8_t *dst)
+void bits256n_rol8(size_t size, const uint8_t *src, uint8_t *dst)
 {
     bits256n_shl8(size, src, dst);
 
     dst[size - 1] = src[0];
 }
-void bits256n_rol32(size_t size, uint8_t *src, uint8_t *dst)
+void bits256n_rol32(size_t size, const uint8_t *src, uint8_t *dst)
 {
     bits256n_shl32(size, src, dst);
 
     size_t units = size / 4;
-    int32_t *p = (int32_t*)src;
+    const int32_t *p = (const int32_t*)src;
     int32_t *q = (int32_t*)dst;
 
     q[units - 1] = p[0];
 }
 
-void bits256n_ror8(size_t size, uint8_t *src, uint8_t *dst)
+void bits256n_ror8(size_t size, const uint8_t *src, uint8_t *dst)
 {
     bits256n_shr8(size, src, dst);
 
     dst[0] = src[size - 1];
 }
-void bits256n_ror32(size_t size, uint8_t *src, uint8_t *dst)
+void bits256n_ror32(size_t size, const uint8_t *src, uint8_t *dst)
 {
     bits256n_shr32(size, src, dst);
 
     size_t units = size / 4;
-    int32_t *p = (int32_t*)src;
+    const int32_t *p = (const int32_t*)src;
     int32_t *q = (int32_t*)dst;
 
     q[0] = p[units - 1];
@@ -401,12 +392,12 @@ void bits256n_ror32(size_t size, uint8_t *src, uint8_t *dst)
 
 /* ascendant/descendant */
 
-void  vec_i32v8n_get_sorted_index(size_t size, int32_t *src, int32_t element, int32_t *out_start, int32_t *out_end);
+void  vec_i32v8n_get_sorted_index(size_t size, const int32_t *src, int32_t element, int32_t *out_start, int32_t *out_end);
 ;
-void  vec_i16v16n_get_sorted_index(size_t size, int16_t *src, int16_t element, int16_t *out_start, int16_t *out_end)
+void  vec_i16v16n_get_sorted_index(size_t size, const int16_t *src, int16_t element, int16_t *out_start, int16_t *out_end)
 {
 	size_t units = size / 4;
-	__m64 *p = (__m64*)src;
+	const __m64 *p = (const __m64*)src;
 
 	ANY_EMMS();
 	__m64 one_x_4 = _mm_set1_pi16(1);
@@ -440,20 +431,20 @@ void  vec_i16v16n_get_sorted_index(size_t size, int16_t *src, int16_t element, i
 
 	ANY_EMMS();
 }
-void  vec_i8v32n_get_sorted_index(size_t size, int8_t *src, int8_t element, int8_t *out_start, int8_t *out_end);
+void  vec_i8v32n_get_sorted_index(size_t size, const int8_t *src, int8_t element, int8_t *out_start, int8_t *out_end);
 ;
 
-int  vec_i32v8n_is_sorted_a(size_t size, int32_t *src)
+int  vec_i32v8n_is_sorted_a(size_t size, const int32_t *src)
 ;
-int  vec_i32v8n_is_sorted_d(size_t size, int32_t *src)
+int  vec_i32v8n_is_sorted_d(size_t size, const int32_t *src)
 ;
-int  vec_i32v8n_is_sorted(size_t size, int32_t *src)
+int  vec_i32v8n_is_sorted(size_t size, const int32_t *src)
 ;
 
-int  vec_i16v16n_is_sorted_a(size_t size, int16_t *src)
+int  vec_i16v16n_is_sorted_a(size_t size, const int16_t *src)
 {
     size_t units = size / 4;
-    __m64 *p = (__m64*)src;
+    const __m64 *p = (const __m64*)src;
 
     ANY_EMMS();
     __m64 it0 = _mm_set1_pi16(INT16_MIN);
@@ -483,10 +474,10 @@ int  vec_i16v16n_is_sorted_a(size_t size, int16_t *src)
     ANY_EMMS();
     return !!result;
 }
-int  vec_i16v16n_is_sorted_d(size_t size, int16_t *src)
+int  vec_i16v16n_is_sorted_d(size_t size, const int16_t *src)
 {
     size_t units = size / 4;
-    __m64 *p = (__m64*)src;
+    const __m64 *p = (const __m64*)src;
 
     ANY_EMMS();
     __m64 it0 = _mm_set1_pi16(INT16_MAX);
@@ -516,10 +507,10 @@ int  vec_i16v16n_is_sorted_d(size_t size, int16_t *src)
     ANY_EMMS();
     return !!result;
 }
-int  vec_i16v16n_is_sorted(size_t size, int16_t *src)
+int  vec_i16v16n_is_sorted(size_t size, const int16_t *src)
 {
     size_t units = size / 4;
-    __m64 *p = (__m64*)src;
+    const __m64 *p = (const __m64*)src;
 
     ANY_EMMS();
     __m64 it_a0 = _mm_set1_pi16(INT16_MIN);
@@ -562,9 +553,9 @@ int  vec_i16v16n_is_sorted(size_t size, int16_t *src)
     return result_a || result_d;
 }
 
-int  vec_i8v32n_is_sorted_a(size_t size, int8_t *src)
+int  vec_i8v32n_is_sorted_a(size_t size, const int8_t *src)
 ;
-int  vec_i8v32n_is_sorted_d(size_t size, int8_t *src)
+int  vec_i8v32n_is_sorted_d(size_t size, const int8_t *src)
 ;
-int  vec_i8v32n_is_sorted(size_t size, int8_t *src)
+int  vec_i8v32n_is_sorted(size_t size, const int8_t *src)
 ;

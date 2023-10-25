@@ -46,10 +46,10 @@ static void dump8(const char *s, __m128i current)
 #endif
 
 
-void  vec_i16v16n_abs(size_t size, int16_t *src)
+void  vec_i16v16n_abs(size_t size, const int16_t *src)
 {
     size_t units = size / 8;	
-	__m128i *p = (__m128i*)src;
+	const __m128i *p = (const __m128i*)src;
 
 	__m128i max_x_8 = _mm_set1_epi16(UINT16_MAX);
 	__m128i zero_x_8 = _mm_setzero_si128();
@@ -68,11 +68,11 @@ void  vec_i16v16n_abs(size_t size, int16_t *src)
 
 
 
-void  vec_i16v16n_dist(size_t size, int16_t *src1, int16_t *src2, int16_t *dst)
+void  vec_i16v16n_dist(size_t size, const int16_t *src1, const int16_t *src2, int16_t *dst)
 {
 	size_t units = size / 8;
-	__m128i *p = (__m128i*)src1;
-	__m128i *q = (__m128i*)src2;
+	const __m128i *p = (const __m128i*)src1;
+	const __m128i *q = (const __m128i*)src2;
 	__m128i *r = (__m128i*)dst;
 
 	__m128i umax_x_8 = _mm_set1_epi16(UINT16_MAX);
@@ -169,11 +169,11 @@ static inline __m128i vec_u256n_get_hamming_weight_i(__m128i it, __m128i it2, __
 
     return rs;
 }
-size_t vec_u256n_get_hamming_weight(size_t size, uint8_t *src)
+size_t vec_u256n_get_hamming_weight(size_t size, const uint8_t *src)
 {
     size_t units = size / 16 / 2;
 
-    __m128i *p = (__m128i*)src;
+    const __m128i *p = (const __m128i*)src;
 
     __m128i rs = _mm_setzero_si128();
 
@@ -198,12 +198,12 @@ size_t vec_u256n_get_hamming_weight(size_t size, uint8_t *src)
     return r;
 }
 
-size_t vec_u256n_get_hamming_distance(size_t size, uint8_t *src1, uint8_t *src2)
+size_t vec_u256n_get_hamming_distance(size_t size, const uint8_t *src1, const uint8_t *src2)
 {
     size_t units = size / 16 / 2;
 
-    __m128i *p = (__m128i*)src1;
-    __m128i *q = (__m128i*)src2;
+    const __m128i *p = (const __m128i*)src1;
+    const __m128i *q = (const __m128i*)src2;
 
     __m128i rs = _mm_setzero_si128();
 
@@ -234,13 +234,106 @@ size_t vec_u256n_get_hamming_distance(size_t size, uint8_t *src1, uint8_t *src2)
 }
 
 
-size_t vec_i32v8n_get_sum(size_t size, uint32_t *src)
+
+
+/* sum */
+
+int32_t vec_i32v8n_sum_i32(size_t size, const int32_t *src)
 ;
-int16_t vec_i16v16n_get_sum_i16(size_t size, uint16_t *src)
+uint32_t vec_u32v8n_sum_u32(size_t size, const uint32_t *src)
 ;
-size_t vec_i16v16n_get_sum(size_t size, uint16_t *src)
+
+int16_t vec_i16v16n_sum_i16(size_t size, const int16_t *src)
 ;
-int8_t vec_i8v32n_get_sum_i8(size_t size, uint8_t *src)
+size_t vec_i16v16n_sum(size_t size, const int16_t *src)
 ;
-size_t vec_i8v32n_get_sum(size_t size, uint8_t *src)
+uint16_t vec_u16v16n_sum_u16(size_t size, const uint16_t *src)
 ;
+size_t vec_u16v16n_sum(size_t size, const uint16_t *src)
+;
+
+int8_t vec_i8v32n_sum_i8(size_t size, const int8_t *src)
+;
+size_t vec_i8v32n_sum(size_t size, const int8_t *src)
+;
+
+// returns i16x8
+static __m128i vec_u8v32n_sum_i16x8(size_t size, const uint8_t *src)
+{
+    size_t units = size / 32;
+    const __m128i *p = (const void*)src;
+
+    const __m128i mask_lower = _mm_set1_epi16(0x00FF);
+    __m128i results = _mm_setzero_si128();
+    __m128i results2 = _mm_setzero_si128();
+
+    for (int i = 0; i < units; ++i)
+    {
+        __m128i it = p[i * 2];
+        __m128i it2 = p[i * 2 + 1];
+
+        __m128i it_hi = _mm_slli_epi16(it, 8);
+        __m128i it2_hi = _mm_slli_epi16(it2, 8);
+        __m128i it_lo = _mm_and_si128(it, mask_lower);
+        __m128i it2_lo = _mm_and_si128(it2, mask_lower);
+
+        results = _mm_adds_epi16(results, it_hi);
+        results2 = _mm_adds_epi16(results2, it2_hi);
+        results = _mm_adds_epi16(results, it_lo);
+        results2 = _mm_adds_epi16(results2, it2_lo);
+    }
+
+    return _mm_adds_epi16(results, results2);
+}
+uint8_t vec_u8v32n_sum_u8(size_t size, const uint8_t *src)
+{
+    __m128i results = vec_i8v32n_sum_m64(size, src);
+    results = _mm_adds_epi16(results, _mm_srli_si128(results, 2));
+    results = _mm_adds_epi16(results, _mm_srli_si128(results, 4));
+    results = _mm_adds_epi16(results, _mm_srli_si128(results, 8));
+    size_t result = _mm_cvtsi128_si32(results) & 0xFFFF;
+
+    return result > INT8_MAX ? INT8_MAX : result;
+}
+size_t vec_u8v32n_sum(size_t size, const uint8_t *src)
+{
+    const size_t unit_size = 0x4000 / (UINT8_MAX + 1) * 8;
+    size_t units = size / unit_size;
+
+    size_t result = 0;
+
+    for (int i = 0; i < units; ++i)
+    {
+        __m128i results = vec_u8v32n_sum_i16x8(unit_size, src + i * unit_size);
+        const __m128i mask_lower = _mm_set1_epi32(0x0000FFFF);
+        __m128i results2 = _mm_srli_si32(results, 16);
+        results = _mm_and_si128(results, mask_lower);
+        results = _mm_add_epi32(results, results2);
+        results = _mm_add_epi32(results, _mm_srli_si128(results, 4));
+        size_t result2 = _mm_cvtsi128_si32(results) & 0xFFFF;
+
+        size_t result0 = result;
+        result = result0 + result2;
+        if (result < result0) result = SIZE_MAX;
+    }
+
+    size_t size2 = size % unit_size;
+    size_t base = units * unit_size;
+
+    if (size2 != 0)
+    {
+        __m128i results = vec_u8v32n_sum_i16x8(size2, src + base);
+        const __m128i mask_lower = _mm_set1_epi32(0x0000FFFF);
+        __m128i results2 = _mm_srli_si32(results, 16);
+        results = _mm_and_si128(results, mask_lower);
+        results = _mm_add_epi32(results, results2);
+        results = _mm_add_epi32(results, _mm_srli_si128(results, 4));
+        size_t result2 = _mm_cvtsi128_si32(results) & 0xFFFF;
+
+        size_t result0 = result;
+        result = result0 + result2;
+        if (result < result0) result = SIZE_MAX;
+    }
+
+    return result;
+}

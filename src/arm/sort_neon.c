@@ -41,19 +41,17 @@ static void dump8(const char *s, int8x8_t current)
 
 
 
-void vec_i32v8n_get_reversed(size_t size, int32_t *src, int32_t *dst)
+void vec_i32v8n_reverse(size_t size, const int32_t *src, int32_t *dst)
 {
 	size_t units = size / 2;
-	int64x1_t *p = (int64x1_t*)src;
+	size_t units2 = units / 2;
+	const int64x1_t *p = (const int64x1_t*)src;
 	int64x1_t *q = (int64x1_t*)dst;
 
-	size_t i = 0;
-	size_t j = units - 1;
-	
-	while (i < j)
+	for (int i = 0; i < units2; ++i)
 	{
-		uint64x1_t left = p[i];
-		uint64x1_t right = p[j];
+		uint64x1_t left = p[i * 2];
+		uint64x1_t right = p[j * 2 + 1];
 
 		uint64x1_t left_left = vshr_n_u64(left, 32);
 		uint64x1_t right_left = vshr_n_u64(right, 32);
@@ -63,36 +61,34 @@ void vec_i32v8n_get_reversed(size_t size, int32_t *src, int32_t *dst)
 		left = vorr_u64(left_left, left_right);
 		right = vorr_u64(right_left, right_right);
 
-		q[i++] = right;
-		q[j--] = left;
+		q[units - 1 - i * 2 - 1] = right;
+		q[units - 1 - i * 2] = left;
 	}
 
 	if (units & 1)
 	{
-		uint64x1_t it = p[i];
+		uint64x1_t it = p[units2];
 
 		uint64x1_t left = vshr_n_u64(it, 32);
 		uint64x1_t right = vshl_n_u64(it, 32);
 
 		it = vorr_u32(left, right);
 
-		p[i] = it;
+		q[units2] = it;
 	}
 }
 // current version is slow as generic version is.
-void vec_i16v16n_get_reversed(size_t size, int16_t *src, int16_t *dst)
+void vec_i16v16n_reverse(size_t size, const int16_t *src, int16_t *dst)
 {
 	size_t units = size / 4;
-	int64x1_t *p = (int64x1_t*)src;
+	size_t units2 = units / 2;
+	const int64x1_t *p = (const int64x1_t*)src;
 	int64x1_t *q = (int64x1_t*)dst;
 
-	size_t i = 0;
-	size_t j = units - 1;
-	
-	while (i < j)
+	for (int i = 0; i < units2; ++i)
 	{
-		uint64x1_t left = p[i];
-		uint64x1_t right = p[j];
+		uint64x1_t left = p[i * 2];
+		uint64x1_t right = p[i * 2 + 1];
 
 		uint64x1_t left_left = vshr_n_u64(left, 32);
 		uint64x1_t right_left = vshr_n_u64(right, 32);
@@ -110,13 +106,13 @@ void vec_i16v16n_get_reversed(size_t size, int16_t *src, int16_t *dst)
 		left = vreinterpret_u64_u32(vorr_u32(left_left32, left_right32));
 		right = vreinterpret_u64_u32(vorr_u32(right_left#2, right_right32));
 
-		q[i++] = right;
-		q[j--] = left;
+		q[units - 1 - i * 2 - 1] = right;
+		q[units - 1 - i * 2] = left;
 	}
 
 	if (units & 1)
 	{
-		uint64x1_t it = p[i];
+		uint64x1_t it = p[units2];
 
 		uint64x1_t left = vshr_n_u64(it, 32);
 		uint64x1_t right = vshl_n_u64(it, 32);
@@ -128,22 +124,20 @@ void vec_i16v16n_get_reversed(size_t size, int16_t *src, int16_t *dst)
 
 		it = vreinterpret_u64_u32(vorr_u32(left32, right32));
 
-		p[i] = it;
+		q[units2] = it;
 	}
 }
-void vec_i8v32n_get_reversed(size_t size, int8_t *src, int8_t *dst)
+void vec_i8v32n_reverse(size_t size, const int8_t *src, int8_t *dst)
 {
 	size_t units = size / 8;
-	int64x1_t *p = (int64x1_t*)src;
+	size_t units2 = units / 2;
+	const int64x1_t *p = (const int64x1_t*)src;
 	int64x1_t *q = (int64x1_t*)dst;
 
-	size_t i = 0;
-	size_t j = units - 1;
-	
-	while (i < j)
+	for (int i = 0; i < units2; ++i)
 	{
-		uint64x1_t left = p[i];
-		uint64x1_t right = p[j];
+		uint64x1_t left = p[i * 2];
+		uint64x1_t right = p[i * 2 + 1];
 
 		uint64x1_t left_left = vshr_n_u64(left, 32);
 		uint64x1_t right_left = vshr_n_u64(right, 32);
@@ -169,13 +163,13 @@ void vec_i8v32n_get_reversed(size_t size, int8_t *src, int8_t *dst)
 		left = vreinterpret_u64_u16(vorr_u16(left_left16, left_right16));
 		right = vreinterpret_u64_u16(vorr_u16(right_left16, right_right16));
 
-		q[i++] = right;
-		q[j--] = left;
+		q[units - 1 - i * 2 - 1] = right;
+		q[units - 1 - i * 2] = left;
 	}
 
 	if (units & 1)
 	{
-		uint64x1_t it = p[i];
+		uint64x1_t it = p[units2];
 
 		uint64x1_t left = vshr_n_u64(it, 32);
 		uint64x1_t right = vshl_n_u64(it, 32);
@@ -192,7 +186,7 @@ void vec_i8v32n_get_reversed(size_t size, int8_t *src, int8_t *dst)
 
 		it = vreinterpret_u64_u16(vorr_u16(left16, right16));
 
-		p[i] = it;
+		q[units2] = it;
 	}
 }
 
@@ -201,10 +195,10 @@ void vec_i8v32n_get_reversed(size_t size, int8_t *src, int8_t *dst)
 
 /* shift */
 
-void vec_u256n_shl1(size_t size, uint8_t *src, uint8_t *dst)
+void vec_u256n_shl1(size_t size, const uint8_t *src, uint8_t *dst)
 {
     size_t units = size / 16;
-    __m128i *p = (__m128i*)src;
+    const __m128i *p = (const __m128i*)src;
     __m128i *q = (__m128i*)dst;
 
     __m128i mask_high = _mm_set1_epi8(UINT8_MAX - 1);
@@ -242,10 +236,10 @@ void vec_u256n_shl1(size_t size, uint8_t *src, uint8_t *dst)
         q[units - 1] = _mm_or_si128(shifted, shifted2);
     }
 }
-void vec_u256n_shl8(size_t size, uint8_t *src, uint8_t *dst)
+void vec_u256n_shl8(size_t size, const uint8_t *src, uint8_t *dst)
 {
     size_t units = size / 8;
-    uint64x1_t *p = (uint64x1_t*)src;
+    const uint64x1_t *p = (const uint64x1_t*)src;
     uint64x1_t *q = (uint64x1_t*)dst;
 
     uint64x1_t it0 = p[0];
@@ -263,10 +257,10 @@ void vec_u256n_shl8(size_t size, uint8_t *src, uint8_t *dst)
 
     q[size - 1] = vshr_n_u64(it0, 8);
 }
-void vec_u256n_shr8(size_t size, uint8_t *src, uint8_t *dst)
+void vec_u256n_shr8(size_t size, const uint8_t *src, uint8_t *dst)
 {
     size_t units = size / 8;
-    uint64x1_t *p = (uint64x1_t*)src;
+    const uint64x1_t *p = (const uint64x1_t*)src;
     uint64x1_t *q = (uint64x1_t*)dst;
 
     uint64x1_t it0 = p[units - 1];
@@ -284,10 +278,10 @@ void vec_u256n_shr8(size_t size, uint8_t *src, uint8_t *dst)
 
     q[0] = vshl_n_u64(it0, 8);
 }
-void vec_u256n_shl32(size_t size, uint8_t *src, uint8_t *dst)
+void vec_u256n_shl32(size_t size, const uint8_t *src, uint8_t *dst)
 {
     size_t units = size / 8;
-    uint64x1_t *p = (uint64x1_t*)src;
+    const uint64x1_t *p = (const uint64x1_t*)src;
     uint64x1_t *q = (uint64x1_t*)dst;
 
     uint64x1_t it0 = p[0];
@@ -305,10 +299,10 @@ void vec_u256n_shl32(size_t size, uint8_t *src, uint8_t *dst)
 
     q[size - 1] = vshr_n_u64(it0, 32);
 }
-void vec_u256n_shr32(size_t size, uint8_t *src, uint8_t *dst)
+void vec_u256n_shr32(size_t size, const uint8_t *src, uint8_t *dst)
 {
     size_t units = size / 8;
-    uint64x1_t *p = (uint64x1_t*)src;
+    const uint64x1_t *p = (const uint64x1_t*)src;
     uint64x1_t *q = (uint64x1_t*)dst;
 
     uint64x1_t it0 = p[units - 1];
@@ -327,22 +321,22 @@ void vec_u256n_shr32(size_t size, uint8_t *src, uint8_t *dst)
     q[0] = vshl_n_u64(it0, 32);
 }
 
-void vec_u256n_rol8(size_t size, uint8_t *src, uint8_t *dst)
+void vec_u256n_rol8(size_t size, const uint8_t *src, uint8_t *dst)
 {
     vec_u256n_shl8(size, src, dst);
 
     dst[size - 1] = src[0];
 }
-void vec_u256n_ror8(size_t size, uint8_t *src, uint8_t *dst)
+void vec_u256n_ror8(size_t size, const uint8_t *src, uint8_t *dst)
 {
     vec_u256n_shr8(size, src, dst);
 
     dst[0] = src[size - 1];
 }
 
-void vec_u256n_rol32(size_t size, uint8_t *src, uint8_t *dst)
+void vec_u256n_rol32(size_t size, const uint8_t *src, uint8_t *dst)
 ;
 
-void vec_u256n_ror32(size_t size, uint8_t *src, uint8_t *dst)
+void vec_u256n_ror32(size_t size, const uint8_t *src, uint8_t *dst)
 ;
 
