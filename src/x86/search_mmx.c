@@ -37,12 +37,75 @@ static void dump_u8(const char *s, __m64 current)
 size_t vec_i32v8n_get_min_index(size_t size, const int32_t *src);
 size_t vec_i32v8n_get_max_index(size_t size, const int32_t *src);
 void vec_i32v8n_get_minmax_index(size_t size, const int32_t *src, size_t *out_min, size_t *out_max);
-int32_t vec_i32v8n_get_min(size_t size, const int32_t *src);
+int32_t vec_i32v8n_get_min(size_t size, const int32_t *src)
+;
 int32_t vec_i32v8n_get_max(size_t size, const int32_t *src);
 void vec_i32v8n_get_minmax(size_t size, const int32_t *src, int32_t *out_min, int32_t *out_max);
 
 
+int16_t vec_i16v16n_get_min_index_i16(size_t size, const int16_t *src)
+{
+    size_t units = size / 4;
+    const __m64 *p = (const __m64*)src;
+
+    __m64 iota = _mm_set_pi16(3, 2, 1, 0);
+    __m64 four_x4 = _mm_set1_pi16(4);
+    __m64 max_x4 = _mm_set1_pi16(UINT16_MAX);
+    __m64 current = _mm_set1_pi16(INT16_MAX);
+    __m64 current_idx = _mm_set1_pi16(INT16_MAX);
+
+    for (size_t i = 0; i < units; ++i)
+    {
+        __m64 it = p[i];
+        __m64 mask = _mm_cmpgt_pi16(current, it);
+#ifdef USE_ANDNOT
+        current = _mm_andnot_si64(mask, current);
+        current_idx = _mm_andnot_si64(mask, current_idx);
+#else
+        __m64 mask2 = _mm_xor_si64(mask, max_x4);
+        current = _mm_and_si64(current, mask2);
+        current_idx = _mm_and_si64(current_idx, mask2);
+#endif
+        it = _mm_and_si64(it, mask);
+        __m64 it2 = _mm_and_si64(iota, mask);
+        current = _mm_or_si64(current, it);
+        current_idx = _mm_or_si64(current_idx, it2);
+
+        iota = _mm_add_pi16(iota, four_x4);
+    }
+
+    __m64 current2 = _mm_srli_si64(current, 32);
+    __m64 current2_idx = _mm_srli_si64(current_idx, 32);
+    __m64 mask = _mm_cmpgt_pi16(current, current2);
+
+    current2 = _mm_and_si64(current2, mask);
+    current2_idx = _mm_and_si64(current2_idx, mask);
+#ifdef USE_ANDNOT
+    current = _mm_andnot_si64(current, mask);
+    current_idx = _mm_andnot_si64(current_idx, mask);
+#else
+    mask = _mm_xor_si64(mask, max_x4);
+
+    current = _mm_and_si64(current, mask);
+    current_idx = _mm_and_si64(current_idx, mask);
+#endif
+
+    current = _mm_or_si64(current, current2);
+    current_idx = _mm_or_si64(current_idx, current2_idx);
+
+    uint32_t results = _mm_cvtsi64_si32(current);
+    uint32_t results_idx = _mm_cvtsi64_si32(current_idx);
+    int16_t lo = results & 0xFFFF;
+    int16_t lo_idx = results_idx & 0xFFFF;
+    int16_t hi = (results >> 16) & 0xFFFF;
+    int16_t hi_idx = (results_idx >> 16) & 0xFFFF;
+
+    ANY_EMMS();
+    return lo < lo_idx ? lo_idx : hi_idx;
+}
 size_t vec_i16v16n_get_min_index(size_t size, const int16_t *src)
+;
+int16_t vec_i16v16n_get_max_index_i16(size_t size, const int16_t *src)
 ;
 size_t vec_i16v16n_get_max_index(size_t size, const int16_t *src)
 ;
@@ -55,7 +118,7 @@ int16_t vec_i16v16n_get_min(size_t size, const int16_t *src)
     const __m64 *p = (const __m64*)src;
 
     // ANY_EMMS();
-    __m64 max_x_4 = _mm_set1_pi16(UINT16_MAX);
+    __m64 max_x4 = _mm_set1_pi16(UINT16_MAX);
     __m64 current = _mm_set1_pi16(INT16_MAX);
 
     for (size_t i = 0; i < units; ++i)
@@ -65,7 +128,7 @@ int16_t vec_i16v16n_get_min(size_t size, const int16_t *src)
 #ifdef USE_ANDNOT
         current = _mm_andnot_si64(mask, current);
 #else
-        __m64 mask2 = _mm_xor_si64(mask, max_x_4);
+        __m64 mask2 = _mm_xor_si64(mask, max_x4);
         current = _mm_and_si64(current, mask2);
 #endif
         it = _mm_and_si64(it, mask);
@@ -78,13 +141,13 @@ int16_t vec_i16v16n_get_min(size_t size, const int16_t *src)
     __m64 mask = _mm_cmpgt_pi16(current, current2);
     __m64 mask2 = _mm_cmpgt_pi16(current, current3);
     __m64 mask3 = _mm_cmpgt_pi16(current, current4);
-    mask = _mm_xor_si64(mask, max_x_4);
+    mask = _mm_xor_si64(mask, max_x4);
 #ifdef USE_ANDNOT
     mask = _mm_andnot_si64(mask2, mask);
     mask = _mm_andnot_si64(mask3, mask);
 #else
-    mask2 = _mm_xor_si64(mask2, max_x_4);
-    mask3 = _mm_xor_si64(mask3, max_x_4);
+    mask2 = _mm_xor_si64(mask2, max_x4);
+    mask3 = _mm_xor_si64(mask3, max_x4);
 
     mask = _mm_and_si64(mask, mask2);
     mask = _mm_and_si64(mask, mask3);
@@ -108,7 +171,7 @@ int16_t vec_i16v16n_get_max(size_t size, const int16_t *src)
 
     ANY_EMMS();
 #ifdef USE_ANDNOT
-    __m64 max_x_4 = _mm_set1_pi16(UINT16_MAX);
+    __m64 max_x4 = _mm_set1_pi16(UINT16_MAX);
 #endif
     __m64 current = _mm_set1_pi16(INT16_MIN);
 
@@ -119,7 +182,7 @@ int16_t vec_i16v16n_get_max(size_t size, const int16_t *src)
 #ifdef USE_ANDNOT
         current = _mm_andnot_si64(mask, current);
 #else
-        __m64 mask2 = _mm_xor_si64(mask, max_x_4);
+        __m64 mask2 = _mm_xor_si64(mask, max_x4);
         current = _mm_and_si64(current, mask2);
 #endif
         mask = _mm_and_si64(mask, it);
@@ -152,7 +215,7 @@ void vec_i16v16n_get_minmax(size_t size, const int16_t *src, int16_t *out_min, i
     size_t units = size / 4;
     const __m64 *p = (const __m64*)src;
 
-    __m64 max_x_4 = _mm_set1_pi16(UINT16_MAX);
+    __m64 max_x4 = _mm_set1_pi16(UINT16_MAX);
     __m64 current_min = _mm_set1_pi16(INT16_MAX);
     __m64 current_max = _mm_set1_pi16(INT16_MIN);
 
@@ -167,8 +230,8 @@ void vec_i16v16n_get_minmax(size_t size, const int16_t *src, int16_t *out_min, i
         current_max = _mm_andnot_si64(mask_max, current_max);
 #else
         // fast version
-        __m64 mask2 = _mm_xor_si64(mask, max_x_4);
-        __m64 mask_max2 = _mm_xor_si64(mask_max, max_x_4);
+        __m64 mask2 = _mm_xor_si64(mask, max_x4);
+        __m64 mask_max2 = _mm_xor_si64(mask_max, max_x4);
 
         current_min = _mm_and_si64(current_min, mask2);
         current_max = _mm_and_si64(current_max, mask_max2);
@@ -189,15 +252,15 @@ void vec_i16v16n_get_minmax(size_t size, const int16_t *src, int16_t *out_min, i
     __m64 mask = _mm_cmpgt_pi16(current_min, current2);
     __m64 mask2 = _mm_cmpgt_pi16(current_min, current3);
     __m64 mask3 = _mm_cmpgt_pi16(current_min, current4);
-    mask = _mm_xor_si64(mask, max_x_4);
+    mask = _mm_xor_si64(mask, max_x4);
 #ifdef USE_ANDNOT
     // slower?
     mask = _mm_andnot_si64(mask2, mask);
     mask = _mm_andnot_si64(mask3, mask);
 #else
     // faster?
-    mask2 = _mm_xor_si64(mask2, max_x_4);
-    mask3 = _mm_xor_si64(mask3, max_x_4);
+    mask2 = _mm_xor_si64(mask2, max_x4);
+    mask3 = _mm_xor_si64(mask3, max_x4);
 
     mask = _mm_and_si64(mask, mask2);
     mask = _mm_and_si64(mask, mask3);
@@ -236,7 +299,89 @@ void vec_i16v16n_get_minmax(size_t size, const int16_t *src, int16_t *out_min, i
 }
 
 
+int8_t vec_i8v32n_get_min_index_i8(size_t size, const int8_t *src)
+{
+    size_t units = size / 8;
+    const __m64 *p = (const __m64*)src;
+
+    __m64 iota = _mm_set_pi8(7, 6, 5, 4,  3, 2, 1, 0);
+    __m64 eight_x8 = _mm_set1_pi8(8);
+    __m64 max_x8 = _mm_set1_pi8(UINT8_MAX);
+    __m64 current = _mm_set1_pi8(INT8_MAX);
+    __m64 current_idx = _mm_set1_pi8(INT8_MAX);
+
+    for (size_t i = 0; i < units; ++i)
+    {
+        __m64 it = p[i];
+        __m64 mask = _mm_cmpgt_pi8(current, it);
+#ifdef USE_ANDNOT
+        current = _mm_andnot_si64(mask, current);
+        current_idx = _mm_andnot_si64(mask, current_idx);
+#else
+        __m64 mask2 = _mm_xor_si64(mask, max_x8);
+        current = _mm_and_si64(current, mask2);
+        current_idx = _mm_and_si64(current_idx, mask2);
+#endif
+        it = _mm_and_si64(it, mask);
+        __m64 it2 = _mm_and_si64(iota, mask);
+        current = _mm_or_si64(current, it);
+        current_idx = _mm_or_si64(current_idx, it2);
+
+        iota = _mm_add_pi8(iota, eight_x8);
+    }
+
+    __m64 current2 = _mm_srli_si64(current, 32);
+    __m64 current2_idx = _mm_srli_si64(current_idx, 32);
+    __m64 mask = _mm_cmpgt_pi8(current, current2);
+
+    current2 = _mm_and_si64(current2, mask);
+    current2_idx = _mm_and_si64(current2_idx, mask);
+#ifdef USE_ANDNOT
+    current = _mm_andnot_si64(current, mask);
+    current_idx = _mm_andnot_si64(current_idx, mask);
+#else
+    mask = _mm_xor_si64(mask, max_x8);
+
+    current = _mm_and_si64(current, mask);
+    current_idx = _mm_and_si64(current_idx, mask);
+#endif
+
+    current = _mm_or_si64(current, current2);
+    current_idx = _mm_or_si64(current_idx, current2_idx);
+
+
+    current2 = _mm_srli_si64(current, 16);
+    current2_idx = _mm_srli_si64(current_idx, 16);
+    mask = _mm_cmpgt_pi8(current, current2);
+
+    current2 = _mm_and_si64(current2, mask);
+    current2_idx = _mm_and_si64(current2_idx, mask);
+#ifdef USE_ANDNOT
+    current = _mm_andnot_si64(current, mask);
+    current_idx = _mm_andnot_si64(current_idx, mask);
+#else
+    mask = _mm_xor_si64(mask, max_x8);
+
+    current = _mm_and_si64(current, mask);
+    current_idx = _mm_and_si64(current_idx, mask);
+#endif
+
+    current = _mm_or_si64(current, current2);
+    current_idx = _mm_or_si64(current_idx, current2_idx);
+
+    uint32_t results = _mm_cvtsi64_si32(current);
+    uint32_t results_idx = _mm_cvtsi64_si32(current_idx);
+    int8_t lo = results & 0xFF;
+    int8_t lo_idx = results_idx & 0xFF;
+    int8_t hi = (results >> 8) & 0xFF;
+    int8_t hi_idx = (results_idx >> 8) & 0xFF;
+
+    ANY_EMMS();
+    return lo < lo_idx ? lo_idx : hi_idx;
+}
 size_t vec_i8v32n_get_min_index(size_t size, const int8_t *src)
+;
+int8_t vec_i8v32n_get_max_index_i8(size_t size, const int8_t *src)
 ;
 size_t vec_i8v32n_get_max_index(size_t size, const int8_t *src)
 ;
@@ -250,7 +395,7 @@ int8_t vec_i8v32n_get_min(size_t size, const int8_t *src)
     const __m64 *p = (const __m64*)src;
 
     ANY_EMMS();
-    __m64 max_x_8 = _mm_set1_pi8(UINT8_MAX);
+    __m64 max_x8 = _mm_set1_pi8(UINT8_MAX);
     __m64 current = _mm_set1_pi8(INT8_MAX);
 
     for (size_t i = 0; i < units; ++i)
@@ -277,9 +422,9 @@ int8_t vec_i8v32n_get_min(size_t size, const int8_t *src)
     __m64 mask5 = _mm_cmpgt_pi8(current, current6);
     __m64 mask6 = _mm_cmpgt_pi8(current, current7);
     __m64 mask7 = _mm_cmpgt_pi8(current, current8);
-    mask = _mm_xor_si64(mask, max_x_8);
-    mask2 = _mm_xor_si64(mask2, max_x_8);
-    mask3 = _mm_xor_si64(mask3, max_x_8);
+    mask = _mm_xor_si64(mask, max_x8);
+    mask2 = _mm_xor_si64(mask2, max_x8);
+    mask3 = _mm_xor_si64(mask3, max_x8);
 
     mask = _mm_andnot_si64(mask4, mask);
     mask2 = _mm_andnot_si64(mask5, mask2);
@@ -306,7 +451,7 @@ int8_t vec_i8v32n_get_max(size_t size, const int8_t *src)
     const __m64 *p = (const __m64*)src;
 
     ANY_EMMS();
-    __m64 max_x_8 = _mm_set1_pi8(UINT8_MAX);
+    __m64 max_x8 = _mm_set1_pi8(UINT8_MAX);
     __m64 current = _mm_set1_pi8(INT8_MIN);
 
     for (size_t i = 0; i < units; ++i)
@@ -333,9 +478,9 @@ int8_t vec_i8v32n_get_max(size_t size, const int8_t *src)
     __m64 mask5 = _mm_cmpgt_pi8(current6, current);
     __m64 mask6 = _mm_cmpgt_pi8(current7, current);
     __m64 mask7 = _mm_cmpgt_pi8(current8, current);
-    mask = _mm_xor_si64(mask, max_x_8);
-    mask2 = _mm_xor_si64(mask2, max_x_8);
-    mask3 = _mm_xor_si64(mask3, max_x_8);
+    mask = _mm_xor_si64(mask, max_x8);
+    mask2 = _mm_xor_si64(mask2, max_x8);
+    mask3 = _mm_xor_si64(mask3, max_x8);
 
     mask = _mm_andnot_si64(mask4, mask);
     mask2 = _mm_andnot_si64(mask5, mask2);
@@ -362,7 +507,7 @@ void vec_i8v32n_get_minmax(size_t size, const int8_t *src, int8_t *out_min, int8
     const __m64 *p = (const __m64*)src;
 
     ANY_EMMS();
-    __m64 max_x_8 = _mm_set1_pi8(UINT8_MAX);
+    __m64 max_x8 = _mm_set1_pi8(UINT8_MAX);
     __m64 current_min = _mm_set1_pi8(INT8_MAX);
     __m64 current_max = _mm_set1_pi8(INT8_MIN);
 
@@ -394,9 +539,9 @@ void vec_i8v32n_get_minmax(size_t size, const int8_t *src, int8_t *out_min, int8
     __m64 mask5 = _mm_cmpgt_pi8(current_min, current6);
     __m64 mask6 = _mm_cmpgt_pi8(current_min, current7);
     __m64 mask7 = _mm_cmpgt_pi8(current_min, current8);
-    mask = _mm_xor_si64(mask, max_x_8);
-    mask2 = _mm_xor_si64(mask2, max_x_8);
-    mask3 = _mm_xor_si64(mask3, max_x_8);
+    mask = _mm_xor_si64(mask, max_x8);
+    mask2 = _mm_xor_si64(mask2, max_x8);
+    mask3 = _mm_xor_si64(mask3, max_x8);
 
     mask = _mm_andnot_si64(mask4, mask);
     mask2 = _mm_andnot_si64(mask5, mask2);
@@ -429,9 +574,9 @@ void vec_i8v32n_get_minmax(size_t size, const int8_t *src, int8_t *out_min, int8
     mask5 = _mm_cmpgt_pi8(current6, current_max);
     mask6 = _mm_cmpgt_pi8(current7, current_max);
     mask7 = _mm_cmpgt_pi8(current8, current_max);
-    mask = _mm_xor_si64(mask, max_x_8);
-    mask2 = _mm_xor_si64(mask2, max_x_8);
-    mask3 = _mm_xor_si64(mask3, max_x_8);
+    mask = _mm_xor_si64(mask, max_x8);
+    mask2 = _mm_xor_si64(mask2, max_x8);
+    mask3 = _mm_xor_si64(mask3, max_x8);
 
     mask = _mm_andnot_si64(mask4, mask);
     mask2 = _mm_andnot_si64(mask5, mask2);

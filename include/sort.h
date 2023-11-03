@@ -23,41 +23,41 @@ void vec_i16v16n_reverse(size_t size, const int16_t *src, int16_t *dst)
 ;
 void vec_i8v32n_reverse(size_t size, const int8_t *src, int8_t *dst)
 ;
-void bits256n_reverse(size_t size, uint8_t *src, uint8_t *dst)
+void bits256n_reverse(size_t size, const uint8_t *src, uint8_t *dst)
 ;
 
 
 /* shift */
 
-void bits256n_shl1(size_t size, uint8_t *src, uint8_t *dst)
+void bits256n_shl1(size_t size, const uint8_t *src, uint8_t *dst)
 ;
-void bits256n_shr1(size_t size, uint8_t *src, uint8_t *dst)
+void bits256n_shr1(size_t size, const uint8_t *src, uint8_t *dst)
 ;
-void bits256n_shl8(size_t size, uint8_t *src, uint8_t *dst)
+void bits256n_shl8(size_t size, const uint8_t *src, uint8_t *dst)
 ;
-void bits256n_shl32(size_t size, uint8_t *src, uint8_t *dst)
+void bits256n_shl32(size_t size, const uint8_t *src, uint8_t *dst)
 ;
-void bits256n_shr8(size_t size, uint8_t *src, uint8_t *dst)
+void bits256n_shr8(size_t size, const uint8_t *src, uint8_t *dst)
 ;
-void bits256n_shr32(size_t size, uint8_t *src, uint8_t *dst)
-;
-
-void bits256n_rol1(size_t size, uint8_t *src, uint8_t *dst)
-;
-void bits256n_rol8(size_t size, uint8_t *src, uint8_t *dst)
-;
-void bits256n_rol32(size_t size, uint8_t *src, uint8_t *dst)
-;
-void bits256n_ror1(size_t size, uint8_t *src, uint8_t *dst)
-;
-void bits256n_ror8(size_t size, uint8_t *src, uint8_t *dst)
-;
-void bits256n_ror32(size_t size, uint8_t *src, uint8_t *dst)
+void bits256n_shr32(size_t size, const uint8_t *src, uint8_t *dst)
 ;
 
-void bits256n_rol(size_t size, uint8_t *src, int n, uint8_t *dst)
+void bits256n_rol1(size_t size, const uint8_t *src, uint8_t *dst)
 ;
-void bits256n_ror(size_t size, uint8_t *src, int n, uint8_t *dst)
+void bits256n_rol8(size_t size, const uint8_t *src, uint8_t *dst)
+;
+void bits256n_rol32(size_t size, const uint8_t *src, uint8_t *dst)
+;
+void bits256n_ror1(size_t size, const uint8_t *src, uint8_t *dst)
+;
+void bits256n_ror8(size_t size, const uint8_t *src, uint8_t *dst)
+;
+void bits256n_ror32(size_t size, const uint8_t *src, uint8_t *dst)
+;
+
+void bits256n_rol(size_t size, const uint8_t *src, int n, uint8_t *dst)
+;
+void bits256n_ror(size_t size, const uint8_t *src, int n, uint8_t *dst)
 ;
 
 

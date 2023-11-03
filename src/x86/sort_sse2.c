@@ -126,6 +126,84 @@ void vec_i16v16n_reverse(size_t size, const int16_t *src, int16_t *dst)
 		q[units2] = it;
 	}
 }
+
+void vec_i8v32n_inplace_reverse(size_t size, int8_t *data)
+{
+	size_t units = size / 16;
+	__m128i *p = (__m128i*)data;
+
+    for (int i = 0; i < units / 2; ++i)
+	{
+		__m128i left = p[i];
+		__m128i right = p[units - 1 - i];
+
+		// every var name means bytes' order
+		// mmx has not int64
+
+		__m128i left_left = _mm_slli_si128(left, 8);
+		__m128i right_left = _mm_slli_si128(right, 8);
+		__m128i left_right = _mm_srli_si128(left, 8);
+		__m128i right_right = _mm_srli_si128(right, 8);
+
+		left = _mm_or_si128(left_left, left_right);
+		right = _mm_or_si128(right_left, right_right);
+
+		left_left = _mm_srli_epi64(left, 32);
+		right_left = _mm_srli_epi64(right, 32);
+		left_right = _mm_slli_epi64(left, 32);
+		right_right = _mm_slli_epi64(right, 32);
+
+		left = _mm_or_si128(left_left, left_right);
+		right = _mm_or_si128(right_left, right_right);
+
+		left_left = _mm_srli_epi32(left, 16);
+		right_left = _mm_srli_epi32(right, 16);
+		left_right = _mm_slli_epi32(left, 16);
+		right_right = _mm_slli_epi32(right, 16);
+
+		left = _mm_or_si128(left_left, left_right);
+		right = _mm_or_si128(right_left, right_right);
+
+		left_left = _mm_srli_epi16(left, 8);
+		right_left = _mm_srli_epi16(right, 8);
+		left_right = _mm_slli_epi16(left, 8);
+		right_right = _mm_slli_epi16(right, 8);
+
+		left = _mm_or_si128(left_left, left_right);
+		right = _mm_or_si128(right_left, right_right);
+
+		p[i] = right;
+		p[units - 1 - i] = left;
+	}
+
+    if (units & 1)
+	{
+		__m128i it = p[units / 2];
+
+		__m128i left = _mm_slli_si128(it, 8);
+		__m128i right = _mm_srli_si128(it, 8);
+
+		it = _mm_or_si128(left, right);
+
+		left = _mm_srli_epi64(it, 32);
+		right = _mm_slli_epi64(it, 32);
+
+		it = _mm_or_si128(left, right);
+
+		left = _mm_srli_epi32(it, 16);
+		right = _mm_slli_epi32(it, 16);
+
+		it = _mm_or_si128(left, right);
+
+		left = _mm_srli_epi16(it, 8);
+		right = _mm_slli_epi16(it, 8);
+
+		it = _mm_or_si128(left, right);
+
+		p[units / 2] = it;
+	}
+}
+
 void vec_i8v32n_reverse(size_t size, const int8_t *src, int8_t *dst)
 {
 	size_t units = size / 16;
@@ -388,18 +466,18 @@ void  vec_i16v16n_get_sorted_index(size_t size, const int16_t *src, int16_t elem
 	size_t units = size / 8;
 	const __m128i *p = (const __m128i*)src;
 
-	__m128i one_x_8 = _mm_set1_epi16(1);
-	__m128i element_x_8 = _mm_set1_epi16(element);
+	__m128i one_x8 = _mm_set1_epi16(1);
+	__m128i element_x8 = _mm_set1_epi16(element);
 	__m128i start0 = _mm_setzero_si128();
 	__m128i end0 = _mm_setzero_si128();
 
 	for (int i = 0; i < units; ++i)
 	{
 		__m128i it = p[i];
-		__m128i mask_under = _mm_cmpgt_epi16(element_x_8, it);
-		__m128i mask_over = _mm_cmpgt_epi16(it, element_x_8);
-		__m128i masked_under = _mm_and_si128(mask_under, one_x_8);
-		__m128i masked_over = _mm_and_si128(mask_over, one_x_8);
+		__m128i mask_under = _mm_cmpgt_epi16(element_x8, it);
+		__m128i mask_over = _mm_cmpgt_epi16(it, element_x8);
+		__m128i masked_under = _mm_and_si128(mask_under, one_x8);
+		__m128i masked_over = _mm_and_si128(mask_over, one_x8);
 		start0 = _mm_add_epi16(start0, masked_under);
 		end0 = _mm_add_epi16(end0, masked_over);
 	}

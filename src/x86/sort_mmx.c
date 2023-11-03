@@ -130,6 +130,80 @@ void vec_i16v16n_reverse(size_t size, const int16_t *src, int16_t *dst)
 
 	ANY_EMMS();
 }
+void vec_i8v32n_inplace_reverse(size_t size, int8_t *data)
+{
+	size_t units = size / 8;
+	__m64 *p = (__m64*)data;
+	
+	for (int i = 0; i < units / 2; ++i)
+	{
+		__m64 left = p[i];
+		__m64 right = p[units - 1 - i];
+
+		// every var name means bytes' order
+		// mmx has not int64
+
+#ifdef __3dNOW__
+		left = _m_pswapd(left);
+		right = _m_pswapd(right);
+#else
+		__m64 left_left = _mm_slli_si64(left, 32);
+		__m64 right_left = _mm_slli_si64(right, 32);
+		__m64 left_right = _mm_srli_si64(left, 32);
+		__m64 right_right = _mm_srli_si64(right, 32);
+
+		left = _mm_or_si64(left_left, left_right);
+		right = _mm_or_si64(right_left, right_right);
+#endif
+
+		left_left = _mm_srli_pi32(left, 16);
+		right_left = _mm_srli_pi32(right, 16);
+		left_right = _mm_slli_pi32(left, 16);
+		right_right = _mm_slli_pi32(right, 16);
+
+		left = _mm_or_si64(left_left, left_right);
+		right = _mm_or_si64(right_left, right_right);
+
+		left_left = _mm_srli_pi16(left, 8);
+		right_left = _mm_srli_pi16(right, 8);
+		left_right = _mm_slli_pi16(left, 8);
+		right_right = _mm_slli_pi16(right, 8);
+
+		left = _mm_or_si64(left_left, left_right);
+		right = _mm_or_si64(right_left, right_right);
+
+		p[i] = right;
+		p[units - 1 - i] = left;
+	}
+
+	if (units & 1)
+	{
+		__m64 it = p[units / 2];
+
+#ifdef __3dNOW__
+		it = _m_pswapd(it);
+#else
+		__m64 left = _mm_slli_si64(it, 32);
+		__m64 right = _mm_srli_si64(it, 32);
+
+		it = _mm_or_si64(left, right);
+#endif
+
+		left = _mm_srli_pi32(it, 16);
+		right = _mm_slli_pi32(it, 16);
+
+		it = _mm_or_si64(left, right);
+
+		left = _mm_srli_pi16(it, 8);
+		right = _mm_slli_pi16(it, 8);
+
+		it = _mm_or_si64(left, right);
+
+		p[units / 2] = it;
+	}
+
+	ANY_EMMS();
+}
 void vec_i8v32n_reverse(size_t size, const int8_t *src, int8_t *dst)
 {
 	size_t units = size / 8;
@@ -400,18 +474,18 @@ void  vec_i16v16n_get_sorted_index(size_t size, const int16_t *src, int16_t elem
 	const __m64 *p = (const __m64*)src;
 
 	ANY_EMMS();
-	__m64 one_x_4 = _mm_set1_pi16(1);
-	__m64 element_x_4 = _mm_set1_pi16(element);
+	__m64 one_x4 = _mm_set1_pi16(1);
+	__m64 element_x4 = _mm_set1_pi16(element);
 	__m64 start0 = _mm_setzero_si64();
 	__m64 end0 = _mm_setzero_si64();
 
 	for (int i = 0; i < units; ++i)
 	{
 		__m64 it = p[i];
-		__m64 mask_under = _mm_cmpgt_pi16(element_x_4, it);
-		__m64 mask_over = _mm_cmpgt_pi16(it, element_x_4);
-		__m64 masked_under = _mm_and_si64(mask_under, one_x_4);
-		__m64 masked_over = _mm_and_si64(mask_over, one_x_4);
+		__m64 mask_under = _mm_cmpgt_pi16(element_x4, it);
+		__m64 mask_over = _mm_cmpgt_pi16(it, element_x4);
+		__m64 masked_under = _mm_and_si64(mask_under, one_x4);
+		__m64 masked_over = _mm_and_si64(mask_over, one_x4);
 		start0 = _mm_adds_pi16(start0, masked_under);
 		end0 = _mm_adds_pi16(end0, masked_over);
 	}

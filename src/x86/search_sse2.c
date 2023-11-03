@@ -17,7 +17,66 @@ void vec_i32v8n_get_minmax(size_t size, const int32_t *src, int32_t *out_min, in
 
 
 size_t vec_i16v16n_get_min_index(size_t size, const int16_t *src)
-;
+{
+    size_t units = size / 8;
+    const __m128i *p = (const __m128i*)src;
+
+    __m128i iota = _mm_set_epi16(7, 6, 5, 4,  3, 2, 1, 0);
+    __m128i eight_x8 = _mm_set1_epi16(8);
+    __m128i max_x8 = _mm_set1_epi16(UINT16_MAX);
+    __m128i current_min = _mm_set1_epi16(INT16_MAX);
+    __m128i current_min_idx = _mm_set1_epi16(INT16_MAX);
+
+    for (size_t i = 0; i < units; ++i)
+    {
+        __m128i it = p[i];
+
+        __m128i current_min0 = current_min;
+        current_min = _mm_min_epi16(current_min, it);
+
+        __m128i mask = _mm_cmpeq_epi16(current_min0, current_min);
+        __m128i current_min_idx2 = _mm_andnot_epi16(iota, mask);
+        current_min_idx = _mm_and_epi16(current_min_idx, mask);
+        current_min_idx = _mm_or_epi16(current_min_idx, current_min_idx2);
+        
+        iota = _mm_add_epi16(current_min_idx, eight_x8);
+    }
+
+    {
+        __m128i current_min_hi = _mm_srli_si128(current_min, 8);
+        __m128i current_min_idx_hi = _mm_srli_si128(current_min_idx, 8);
+
+        __m128i current_min0 = current_min;
+        current_min = _mm_min_epi16(current_min, current_min_hi);
+
+        __m128i mask = _mm_cmpeq_epi16(current_min0, current_min);
+        __m128i current_min_idx2 = _mm_andnot_epi16(current_min_idx_hi, mask);
+        current_min_idx = _mm_and_epi16(current_min_idx, mask);
+        current_min_idx = _mm_or_epi16(current_min_idx, current_min_idx2);
+    }
+
+    {
+        __m128i current_min_hi = _mm_srli_si128(current_min, 4);
+        __m128i current_min_idx_hi = _mm_srli_si128(current_min_idx, 4);
+
+        __m128i current_min0 = current_min;
+        current_min = _mm_min_epi16(current_min, current_min_hi);
+
+        __m128i mask = _mm_cmpeq_epi16(current_min0, current_min);
+        __m128i current_min_idx2 = _mm_andnot_epi16(current_min_idx_hi, mask);
+        current_min_idx = _mm_and_epi16(current_min_idx, mask);
+        current_min_idx = _mm_or_epi16(current_min_idx, current_min_idx2);
+    }
+
+    uint32_t results = _mm_cvtsi128_si32(current);
+    uint32_t results_idx = _mm_cvtsi128_si32(current_idx);
+    int16_t lo = results & 0xFFFF;
+    int16_t lo_idx = results_idx & 0xFFFF;
+    int16_t hi = (results >> 16) & 0xFFFF;
+    int16_t hi_idx = (results_idx >> 16) & 0xFFFF;
+
+    return lo < lo_idx ? lo_idx : hi_idx;
+}
 size_t vec_i16v16n_get_max_index(size_t size, const int16_t *src)
 ;
 void vec_i16v16n_get_minmax_index(size_t size, const int16_t *src, size_t *out_min, size_t *out_max)
@@ -115,20 +174,20 @@ int8_t vec_i8v32n_get_min(size_t size, const int8_t *src)
     size_t units = size / 16;
     const __m128i *p = (const __m128i*)src;
 
-    __m128i diff_x_16 = _mm_set1_epi8(UINT8_MAX + INT8_MIN + 1);
+    __m128i diff_x16 = _mm_set1_epi8(UINT8_MAX + INT8_MIN + 1);
     __m128i current_min = _mm_set1_epi8(INT8_MIN);
  
     for (size_t i = 0; i < units; ++i)
     {
         __m128i it = p[i];
-        current_min = _mm_add_epi8(current_min, diff_x_16);
-        it = _mm_add_epi8(it, diff_x_16);
+        current_min = _mm_add_epi8(current_min, diff_x16);
+        it = _mm_add_epi8(it, diff_x16);
 
         current_min = _mm_min_epu8(current_min, it);
-        current_min = _mm_sub_epi8(current_min, diff_x_16);
+        current_min = _mm_sub_epi8(current_min, diff_x16);
     }
 
-	current_min = _mm_add_epi8(current_min, diff_x_16);
+	current_min = _mm_add_epi8(current_min, diff_x16);
 
     __m128i current_min_lo = _mm_srli_si128(current_min, 8);
     current_min = _mm_min_epu8(current_min, current_min_lo);
@@ -139,7 +198,7 @@ int8_t vec_i8v32n_get_min(size_t size, const int8_t *src)
     current_min_lo = _mm_srli_si128(current_min, 1);
     current_min = _mm_min_epu8(current_min, current_min_lo);
 
-	current_min = _mm_sub_epi8(current_min, diff_x_16);
+	current_min = _mm_sub_epi8(current_min, diff_x16);
 
     int8_t result = _mm_cvtsi128_si32(current_min) & UINT8_MAX;
     return result;
@@ -149,20 +208,20 @@ int8_t vec_i8v32n_get_max(size_t size, const int8_t *src)
     size_t units = size / 16;
     const __m128i *p = (const __m128i*)src;
 
-    __m128i diff_x_16 = _mm_set1_epi8(UINT8_MAX + INT8_MIN + 1);
+    __m128i diff_x16 = _mm_set1_epi8(UINT8_MAX + INT8_MIN + 1);
     __m128i current_max = _mm_set1_epi8(INT8_MIN);
  
     for (size_t i = 0; i < units; ++i)
     {
         __m128i it = p[i];
-        current_max = _mm_add_epi8(current_max, diff_x_16);
-        it = _mm_add_epi8(it, diff_x_16);
+        current_max = _mm_add_epi8(current_max, diff_x16);
+        it = _mm_add_epi8(it, diff_x16);
 
         current_max = _mm_max_epu8(current_max, it);
-        current_max = _mm_sub_epi8(current_max, diff_x_16);
+        current_max = _mm_sub_epi8(current_max, diff_x16);
     }
 
-	current_max = _mm_add_epi8(current_max, diff_x_16);
+	current_max = _mm_add_epi8(current_max, diff_x16);
 
     __m128i current_max_lo = _mm_srli_si128(current_max, 8);
     current_max = _mm_max_epu8(current_max, current_max_lo);
@@ -173,7 +232,7 @@ int8_t vec_i8v32n_get_max(size_t size, const int8_t *src)
     current_max_lo = _mm_srli_si128(current_max, 1);
     current_max = _mm_max_epu8(current_max, current_max_lo);
 
-	current_max = _mm_sub_epi8(current_max, diff_x_16);
+	current_max = _mm_sub_epi8(current_max, diff_x16);
 
     int8_t result = _mm_cvtsi128_si32(current_max) & UINT8_MAX;
     return result;
@@ -184,25 +243,25 @@ void vec_i8v32n_get_minmax(size_t size, const int8_t *src, int8_t *out_min, int8
     size_t units = size / 16;
     const __m128i *p = (const __m128i*)src;
 
-    __m128i diff_x_16 = _mm_set1_epi8(UINT8_MAX + INT8_MIN + 1);
+    __m128i diff_x16 = _mm_set1_epi8(UINT8_MAX + INT8_MIN + 1);
     __m128i current_min = _mm_set1_epi8(INT8_MAX);
     __m128i current_max = _mm_set1_epi8(INT8_MIN);
  
     for (size_t i = 0; i < units; ++i)
     {
         __m128i it = p[i];
-        current_min = _mm_add_epi8(current_min, diff_x_16);
-        current_max = _mm_add_epi8(current_max, diff_x_16);
-        it = _mm_add_epi8(it, diff_x_16);
+        current_min = _mm_add_epi8(current_min, diff_x16);
+        current_max = _mm_add_epi8(current_max, diff_x16);
+        it = _mm_add_epi8(it, diff_x16);
 
         current_min = _mm_min_epu8(current_min, it);
         current_max = _mm_max_epu8(current_max, it);
-        current_min = _mm_sub_epi8(current_min, diff_x_16);
-        current_max = _mm_sub_epi8(current_max, diff_x_16);
+        current_min = _mm_sub_epi8(current_min, diff_x16);
+        current_max = _mm_sub_epi8(current_max, diff_x16);
     }
 
-	current_min = _mm_add_epi8(current_min, diff_x_16);
-	current_max = _mm_add_epi8(current_max, diff_x_16);
+	current_min = _mm_add_epi8(current_min, diff_x16);
+	current_max = _mm_add_epi8(current_max, diff_x16);
 
     __m128i current_min_lo = _mm_srli_si128(current_min, 8);
     __m128i current_max_lo = _mm_srli_si128(current_max, 8);
@@ -221,8 +280,8 @@ void vec_i8v32n_get_minmax(size_t size, const int8_t *src, int8_t *out_min, int8
     current_min = _mm_min_epu8(current_min, current_min_lo);
     current_max = _mm_max_epu8(current_max, current_max_lo);
 
-	current_min = _mm_sub_epi8(current_min, diff_x_16);
-	current_max = _mm_sub_epi8(current_max, diff_x_16);
+	current_min = _mm_sub_epi8(current_min, diff_x16);
+	current_max = _mm_sub_epi8(current_max, diff_x16);
 
     *out_min = _mm_cvtsi128_si32(current_min) & UINT8_MAX;
     *out_max  = _mm_cvtsi128_si32(current_max) & UINT8_MAX;

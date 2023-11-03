@@ -54,7 +54,7 @@ int main()
 * 2023-09-08  lifebook(Mobile Intel Celeron (coppermine) 500MHz = {cores: 1, thrds: ?})  ddr1(100MHz)  cc=gcc  Linux(32bit)
 x86           0m34.62s
 mmx(consts/2)  0m9.81s   28.336%
-* 2023-09-08  eeepc r11cx(Atom N2600 = {cores: 2, thrds: 4})  ddr3(1066MHz)  cc=gcc  Linux(32bit PAE)
+* 2023-09-08  eeepc x101ch?(Atom N2600 = {cores: 2, thrds: 4})  ddr3(800MHz)  cc=gcc  Linux(32bit PAE)
 x86            0m7.982s
 x86+omp_x4     0m2.537s  31.784%
 mmx            0m1.511s  18.930%
