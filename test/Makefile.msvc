@@ -17,7 +17,7 @@ autoavx2_min_max_x4:
 	$(CC) /O2 /arch:AVX2 /openmp /Qpar /Qpar-report:2 /GL /Feautoavx2_min_max_x4.exe test_min_max.c $(SRC_DIR)\generic/search.c
 mmx_min_max:
 	$(CC) /O2 /arch:SSE /Femmx_min_max.exe test_min_max.c $(SRC_DIR)\x86/search_mmx.c
-	$(CC) /O2 /arch:SSE /DUSE_ANDNOT /Femmx_min_max_2.exe test_min_max.c $(SRC_DIR)\x86/search_mmx.c
+	$(CC) /O2 /arch:SSE /DUSE_ANDNOT /Femmx_min_max.exe test_min_max.c $(SRC_DIR)\x86/search_mmx.c
 sse2_min_max:
 	$(CC) /O2 /arch:SSE2 /Fesse2_min_max.exe test_min_max.c $(SRC_DIR)\x86/search_sse2.c
 ispc_sse2_min_max:

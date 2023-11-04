@@ -217,15 +217,6 @@ void vec_i8v16n_inplace_reverse(size_t size, int8_t *data)
 	vec_i8v16n_inplace_reverse_i(size, data);
 	ANY_EMMS();
 }
-#include <stdio.h>
-static void dump(const char*label, __m64 src)
-{
-	uint8_t *p = &src;
-	fputs(label, stdout);
-	for (int i = 0; i < 8; ++i)
-	printf("%4d", (int)p[i]);
-	puts("");
-}
 void vec_i8v8n_inplace_reverse(size_t size, int8_t *data)
 {
 	size_t units = size / 8;

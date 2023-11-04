@@ -23,7 +23,7 @@ int32_t vec_i32v8n_get_max(size_t size, const int32_t *src);
 void vec_i32v8n_get_minmax(size_t size, const int32_t *src, int32_t *out_min, int32_t *out_max);
 
 
-size_t vec_i16v16n_get_min_index(size_t size, const int16_t *src)
+int16_t vec_i16v16n_get_min_index_i16(size_t size, const int16_t *src)
 {
     size_t units = size / 8;
     const __m128i *p = (const __m128i*)src;
@@ -42,11 +42,11 @@ size_t vec_i16v16n_get_min_index(size_t size, const int16_t *src)
         current_min = _mm_min_epi16(current_min, it);
 
         __m128i mask = _mm_cmpeq_epi16(current_min0, current_min);
-        __m128i current_min_idx2 = _mm_andnot_epi16(iota, mask);
-        current_min_idx = _mm_and_epi16(current_min_idx, mask);
-        current_min_idx = _mm_or_epi16(current_min_idx, current_min_idx2);
+        __m128i idx = _mm_andnot_si128(mask, iota);
+        current_min_idx = _mm_and_si128(mask, current_min_idx);
+        current_min_idx = _mm_or_si128(current_min_idx, idx);
         
-        iota = _mm_add_epi16(current_min_idx, eight_x8);
+        iota = _mm_adds_epi16(iota, eight_x8);
     }
 
     {
@@ -57,9 +57,9 @@ size_t vec_i16v16n_get_min_index(size_t size, const int16_t *src)
         current_min = _mm_min_epi16(current_min, current_min_hi);
 
         __m128i mask = _mm_cmpeq_epi16(current_min0, current_min);
-        __m128i current_min_idx2 = _mm_andnot_epi16(current_min_idx_hi, mask);
-        current_min_idx = _mm_and_epi16(current_min_idx, mask);
-        current_min_idx = _mm_or_epi16(current_min_idx, current_min_idx2);
+        current_min_idx_hi = _mm_andnot_si128(mask, current_min_idx_hi);
+        current_min_idx = _mm_and_si128(mask, current_min_idx);
+        current_min_idx = _mm_or_si128(current_min_idx, current_min_idx_hi);
     }
 
     {
@@ -70,22 +70,124 @@ size_t vec_i16v16n_get_min_index(size_t size, const int16_t *src)
         current_min = _mm_min_epi16(current_min, current_min_hi);
 
         __m128i mask = _mm_cmpeq_epi16(current_min0, current_min);
-        __m128i current_min_idx2 = _mm_andnot_epi16(current_min_idx_hi, mask);
-        current_min_idx = _mm_and_epi16(current_min_idx, mask);
-        current_min_idx = _mm_or_epi16(current_min_idx, current_min_idx2);
+        current_min_idx_hi = _mm_andnot_si128(mask, current_min_idx_hi);
+        current_min_idx = _mm_and_si128(mask, current_min_idx);
+        current_min_idx = _mm_or_si128(current_min_idx, current_min_idx_hi);
     }
 
-    uint32_t results = _mm_cvtsi128_si32(current);
-    uint32_t results_idx = _mm_cvtsi128_si32(current_idx);
+    uint32_t results = _mm_cvtsi128_si32(current_min);
+    uint32_t results_idx = _mm_cvtsi128_si32(current_min_idx);
     int16_t lo = results & 0xFFFF;
     int16_t lo_idx = results_idx & 0xFFFF;
     int16_t hi = (results >> 16) & 0xFFFF;
     int16_t hi_idx = (results_idx >> 16) & 0xFFFF;
 
-    return lo < lo_idx ? lo_idx : hi_idx;
+    return lo < hi ? lo_idx : hi_idx;
+}
+size_t vec_i16v16n_get_min_index(size_t size, const int16_t *src)
+{
+    const size_t BLOCK_SIZE = 0x4000;
+    size_t units = size / BLOCK_SIZE;
+    int16_t current_min = INT16_MAX;
+    size_t current_min_index = 0;
+
+    for (int i = 0; i < units; ++i)
+    {
+        int16_t idx = vec_i16v16n_get_min_index_i16(BLOCK_SIZE, src + i * BLOCK_SIZE);
+        int16_t it = src[idx];
+
+        if (it < current_min)
+        {
+            current_min = it;
+            current_min_index = i * BLOCK_SIZE + idx;
+        }
+    }
+
+    return current_min_index;
+}
+
+int16_t vec_i16v16n_get_max_index_i16(size_t size, const int16_t *src)
+{
+    size_t units = size / 8;
+    const __m128i *p = (const __m128i*)src;
+
+    __m128i iota = _mm_set_epi16(7, 6, 5, 4,  3, 2, 1, 0);
+    __m128i eight_x8 = _mm_set1_epi16(8);
+    __m128i max_x8 = _mm_set1_epi16(UINT16_MAX);
+    __m128i current_max = _mm_set1_epi16(INT16_MIN);
+    __m128i current_max_idx = _mm_set1_epi16(INT16_MAX);
+
+    for (size_t i = 0; i < units; ++i)
+    {
+        __m128i it = p[i];
+
+        __m128i current_max0 = current_max;
+        current_max = _mm_max_epi16(current_max, it);
+
+        __m128i mask = _mm_cmpeq_epi16(current_max0, current_max);
+        __m128i idx = _mm_andnot_si128(mask, iota);
+        current_max_idx = _mm_and_si128(mask, current_max_idx);
+        current_max_idx = _mm_or_si128(current_max_idx, idx);
+        
+        iota = _mm_adds_epi16(iota, eight_x8);
+    }
+
+    {
+        __m128i current_max_hi = _mm_srli_si128(current_max, 8);
+        __m128i current_max_idx_hi = _mm_srli_si128(current_max_idx, 8);
+
+        __m128i current_max0 = current_max;
+        current_max = _mm_max_epi16(current_max, current_max_hi);
+
+        __m128i mask = _mm_cmpeq_epi16(current_max0, current_max);
+        current_max_idx_hi = _mm_andnot_si128(mask, current_max_idx_hi);
+        current_max_idx = _mm_and_si128(mask, current_max_idx);
+        current_max_idx = _mm_or_si128(current_max_idx, current_max_idx_hi);
+    }
+
+    {
+        __m128i current_max_hi = _mm_srli_si128(current_max, 4);
+        __m128i current_max_idx_hi = _mm_srli_si128(current_max_idx, 4);
+
+        __m128i current_max0 = current_max;
+        current_max = _mm_max_epi16(current_max, current_max_hi);
+
+        __m128i mask = _mm_cmpeq_epi16(current_max0, current_max);
+        current_max_idx_hi = _mm_andnot_si128(mask, current_max_idx_hi);
+        current_max_idx = _mm_and_si128(mask, current_max_idx);
+        current_max_idx = _mm_or_si128(current_max_idx, current_max_idx_hi);
+    }
+
+    uint32_t results = _mm_cvtsi128_si32(current_max);
+    uint32_t results_idx = _mm_cvtsi128_si32(current_max_idx);
+    int16_t lo = results & 0xFFFF;
+    int16_t lo_idx = results_idx & 0xFFFF;
+    int16_t hi = (results >> 16) & 0xFFFF;
+    int16_t hi_idx = (results_idx >> 16) & 0xFFFF;
+
+    return lo > hi ? lo_idx : hi_idx;
 }
 size_t vec_i16v16n_get_max_index(size_t size, const int16_t *src)
-;
+{
+    const size_t BLOCK_SIZE = 0x4000;
+    size_t units = size / BLOCK_SIZE;
+    int16_t current_max = INT16_MIN;
+    size_t current_max_index = 0;
+
+    for (int i = 0; i < units; ++i)
+    {
+        int16_t idx = vec_i16v16n_get_max_index_i16(BLOCK_SIZE, src + i * BLOCK_SIZE);
+        int16_t it = src[idx];
+
+        if (it > current_max)
+        {
+            current_max = it;
+            current_max_index = i * BLOCK_SIZE + idx;
+        }
+    }
+
+    return current_max_index;
+}
 void vec_i16v16n_get_minmax_index(size_t size, const int16_t *src, size_t *out_min, size_t *out_max)
 ;
 

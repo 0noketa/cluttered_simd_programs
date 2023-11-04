@@ -6,6 +6,11 @@
 
 /* min/max */
 
+int32_t vec_i32v8n_get_min_index_i32(size_t size, const int32_t *src)
+{
+    size_t idx = vec_i32v8n_get_min_index(size, src);
+    return idx > INT32_MAX ? INT32_MAX : idx;
+}
 size_t vec_i32v8n_get_min_index(size_t size, const int32_t *src)
 {
     int32_t current = INT32_MAX;
@@ -25,6 +30,11 @@ size_t vec_i32v8n_get_min_index(size_t size, const int32_t *src)
     }
 
     return current_index;
+}
+int32_t vec_i32v8n_get_max_index_i32(size_t size, const int32_t *src)
+{
+    size_t idx = vec_i32v8n_get_max_index(size, src);
+    return idx > INT32_MAX ? INT32_MAX : idx;
 }
 size_t vec_i32v8n_get_max_index(size_t size, const int32_t *src)
 {
@@ -92,6 +102,11 @@ void vec_i32v8n_get_minmax(size_t size, const int32_t *src, int32_t *out_min, in
 }
 
 
+int16_t vec_i16v16n_get_min_index_i16(size_t size, const int16_t *src)
+{
+    size_t idx = vec_i16v16n_get_min_index(size, src);
+    return idx > INT16_MAX ? INT16_MAX : idx;
+}
 size_t vec_i16v16n_get_min_index(size_t size, const int16_t *src)
 {
     int16_t current = INT16_MAX;
@@ -111,6 +126,11 @@ size_t vec_i16v16n_get_min_index(size_t size, const int16_t *src)
     }
 
     return current_index;
+}
+int16_t vec_i16v16n_get_max_index_i16(size_t size, const int16_t *src)
+{
+    size_t idx = vec_i16v16n_get_max_index(size, src);
+    return idx > INT16_MAX ? INT16_MAX : idx;
 }
 size_t vec_i16v16n_get_max_index(size_t size, const int16_t *src)
 {
@@ -178,6 +198,11 @@ void vec_i16v16n_get_minmax(size_t size, const int16_t *src, int16_t *out_min, i
 }
 
 
+int8_t vec_i8v32n_get_min_index_i8(size_t size, const int8_t *src)
+{
+    size_t idx = vec_i8v32n_get_min_index(size, src);
+    return idx > INT8_MAX ? INT8_MAX : idx;
+}
 size_t vec_i8v32n_get_min_index(size_t size, const int8_t *src)
 {
     int8_t current = INT8_MAX;
@@ -197,6 +222,11 @@ size_t vec_i8v32n_get_min_index(size_t size, const int8_t *src)
     }
 
     return current_index;
+}
+int8_t vec_i8v32n_get_max_index_i8(size_t size, const int8_t *src)
+{
+    size_t idx = vec_i8v32n_get_max_index(size, src);
+    return idx > INT8_MAX ? INT8_MAX : idx;
 }
 size_t vec_i8v32n_get_max_index(size_t size, const int8_t *src)
 {

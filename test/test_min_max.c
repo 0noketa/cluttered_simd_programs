@@ -2,26 +2,59 @@
 #include <stdint.h>
 #include <stdalign.h>
 
-#include "../include/simd_tools.h"
+#include "../include/search.h"
 
 #include "data16.inc"
 
 int main()
 {
-    for (int i = 0; i < UINT16_MAX; ++i)
+    for (int i = 0; i < 1; ++i)
+    // for (int i = 0; i < INT16_MAX; ++i)
     {
-        int16_t r0 = vec_i16v16n_get_min(DATA16_SIZE, data16);
-        int16_t r1 = vec_i16v16n_get_max(DATA16_SIZE, data16);
+        int16_t min0 = INT16_MAX;
+        size_t min0_idx = SIZE_MAX;
+        int16_t max0 = INT16_MIN;
+        size_t max0_idx = SIZE_MAX;
+        for (int j = 0; j < DATA16_SIZE; ++j)
+        {
+            int16_t it = data16[j];
+            if (it < min0)
+            {
+                min0 = it;
+                min0_idx = j;
+            }
+            if (it > max0)
+            {
+                max0 = it;
+                max0_idx = j;
+            }
+        }
 
-        printf("%d .. %d\n", (int)r0, (int)r1);
+        size_t min_idx = vec_i16v16n_get_min_index(DATA16_SIZE, data16);
+        int16_t min = vec_i16v16n_get_min(DATA16_SIZE, data16);
+        size_t max_idx = vec_i16v16n_get_max_index(DATA16_SIZE, data16);
+        int16_t max = vec_i16v16n_get_max(DATA16_SIZE, data16);
 
+        if (min0 != min || min0_idx != min_idx
+                || max0 != max || max0_idx != max_idx)
+        {
+            printf("expected: %d @ %d .. %d @ %d\n",
+                (int)min0, (int)min0_idx,
+                (int)max0, (int)max0_idx);
+
+            printf("results : %d @ %d .. %d @ %d\n",
+                (int)min, (int)min_idx,
+                (int)max, (int)max_idx);
+        }
+
+        break;
     }
 
     return 0;
 }
 
 
-/* data_size=[65536], loop=UINT16_MAX,
+/* data_size=[65536], loop=UINT16_MAX, prog=[min, max]|[minmax],
  * cflags={ generic: "-Ofast", simd: "-Os" }, sample=avg(tried3times)
 2022-12-25  r11cx(Atom N2600)
     generic_min_max    0m34.306s
