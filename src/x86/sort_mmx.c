@@ -21,12 +21,15 @@ void vec_i32v8n_inplace_reverse(size_t size, int32_t *data)
 
 void vec_i32v8n_reverse(size_t size, const int32_t *src, int32_t *dst)
 {
+	vec_i32v4n_reverse(size & ~7, src, dst);
+}
+static void vec_i32v4n_reverse_i(size_t size, const int32_t *src, int32_t *dst)
+{
 	size_t units = size / 2;
-	size_t units2 = units / 2;
 	const __m64 *p = (const __m64*)src;
 	__m64 *q = (__m64*)dst;
 
-	for (int i = 0; i < units2; ++i)
+	for (int i = 0; i < units / 2; ++i)
 	{
 		__m64 left = p[i * 2];
 		__m64 right = p[i * 2 + 1];
@@ -47,10 +50,23 @@ void vec_i32v8n_reverse(size_t size, const int32_t *src, int32_t *dst)
 		q[units - 1 - i * 2 - 1] = right;
 		q[units - 1 - i * 2] = left;
 	}
+}
+void vec_i32v4n_reverse(size_t size, const int32_t *src, int32_t *dst)
+{
+	vec_i32v4n_reverse_i(size, src, dst);
+	ANY_EMMS();
+}
+void vec_i32v2n_reverse(size_t size, const int32_t *src, int32_t *dst)
+{
+	size_t units = size / 2;
+	const __m64 *p = (const __m64*)src;
+	__m64 *q = (__m64*)dst;
 
-	if (units2 & 1)
+	vec_i32v4n_reverse(size, src, dst);
+
+	if (units & 1)
 	{
-		__m64 it = p[units2];
+		__m64 it = p[units - 1];
 
 #ifdef __3dNOW__
 		it = _m_pswapd(it);
@@ -61,7 +77,7 @@ void vec_i32v8n_reverse(size_t size, const int32_t *src, int32_t *dst)
 		it = _mm_or_si64(left, right);
 #endif
 
-		q[units2] = it;
+		q[0] = it;
 	}
 
 	ANY_EMMS();
@@ -69,12 +85,15 @@ void vec_i32v8n_reverse(size_t size, const int32_t *src, int32_t *dst)
 // current version is slow as generic version is.
 void vec_i16v16n_reverse(size_t size, const int16_t *src, int16_t *dst)
 {
+	vec_i16v8n_reverse(size & ~16, src, dst);
+}
+static void vec_i16v8n_reverse_i(size_t size, const int16_t *src, int16_t *dst)
+{
 	size_t units = size / 4;
-	size_t units2 = units / 2;
 	const __m64 *p = (const __m64*)src;
 	__m64 *q = (__m64*)dst;
 
-	for (int i = 0; i < units2; ++i)
+	for (int i = 0; i < units / 2; ++i)
 	{
 		__m64 left = p[i * 2];
 		__m64 right = p[i * 2 + 1];
@@ -106,10 +125,23 @@ void vec_i16v16n_reverse(size_t size, const int16_t *src, int16_t *dst)
 		q[units - 1 - i * 2 - 1] = right;
 		q[units - 1 - i * 2] = left;
 	}
+}
+void vec_i16v8n_reverse(size_t size, const int16_t *src, int16_t *dst)
+{
+	vec_i16v8n_reverse_i(size, src, dst);
+	ANY_EMMS();
+}
+void vec_i16v4n_reverse(size_t size, const int16_t *src, int16_t *dst)
+{
+	size_t units = size / 4;
+	const __m64 *p = (const __m64*)src;
+	__m64 *q = (__m64*)dst;
 
-	if (units2 & 1)
+	vec_i16v8n_reverse(size, src, dst);
+
+	if (units & 1)
 	{
-		__m64 it = p[units2];
+		__m64 it = p[units - 1];
 
 #ifdef __3dNOW__
 		it = _m_pswapd(it);
@@ -125,12 +157,16 @@ void vec_i16v16n_reverse(size_t size, const int16_t *src, int16_t *dst)
 
 		it = _mm_or_si64(left, right);
 
-		q[units2] = it;
+		q[0] = it;
 	}
 
 	ANY_EMMS();
 }
 void vec_i8v32n_inplace_reverse(size_t size, int8_t *data)
+{
+	vec_i8v16n_inplace_reverse(size & ~31, data);
+}
+static void vec_i8v16n_inplace_reverse_i(size_t size, int8_t *data)
 {
 	size_t units = size / 8;
 	__m64 *p = (__m64*)data;
@@ -175,6 +211,27 @@ void vec_i8v32n_inplace_reverse(size_t size, int8_t *data)
 		p[i] = right;
 		p[units - 1 - i] = left;
 	}
+}
+void vec_i8v16n_inplace_reverse(size_t size, int8_t *data)
+{
+	vec_i8v16n_inplace_reverse_i(size, data);
+	ANY_EMMS();
+}
+#include <stdio.h>
+static void dump(const char*label, __m64 src)
+{
+	uint8_t *p = &src;
+	fputs(label, stdout);
+	for (int i = 0; i < 8; ++i)
+	printf("%4d", (int)p[i]);
+	puts("");
+}
+void vec_i8v8n_inplace_reverse(size_t size, int8_t *data)
+{
+	size_t units = size / 8;
+	__m64 *p = (__m64*)data;
+
+	vec_i8v16n_inplace_reverse_i(size, data);
 
 	if (units & 1)
 	{
@@ -206,12 +263,15 @@ void vec_i8v32n_inplace_reverse(size_t size, int8_t *data)
 }
 void vec_i8v32n_reverse(size_t size, const int8_t *src, int8_t *dst)
 {
+	vec_i8v16n_reverse(size & ~31, src,dst);
+}
+static void vec_i8v16n_reverse_i(size_t size, const int8_t *src, int8_t *dst)
+{
 	size_t units = size / 8;
-	size_t units2 = units / 2;
 	const __m64 *p = (const __m64*)src;
 	__m64 *q = (__m64*)dst;
 
-	for (int i = 0; i < units2; ++i)
+	for (int i = 0; i < units / 2; ++i)
 	{
 		__m64 left = p[i * 2];
 		__m64 right = p[i * 2 + 1];
@@ -251,10 +311,23 @@ void vec_i8v32n_reverse(size_t size, const int8_t *src, int8_t *dst)
 		q[units - 1 - i * 2 - 1] = right;
 		q[units - 1 - i * 2] = left;
 	}
+}
+void vec_i8v16n_reverse(size_t size, const int8_t *src, int8_t *dst)
+{
+	vec_i8v16n_reverse_i(size, src, dst);
+	ANY_EMMS();
+}
+void vec_i8v8n_reverse(size_t size, const int8_t *src, int8_t *dst)
+{
+	size_t units = size / 8;
+	const __m64 *p = (const __m64*)src;
+	__m64 *q = (__m64*)dst;
 
-	if (units2 & 1)
+	vec_i8v16n_reverse_i(size, src, dst);
+
+	if (units & 1)
 	{
-		__m64 it = p[units2];
+		__m64 it = p[units - 1];
 
 #ifdef __3dNOW__
 		it = _m_pswapd(it);
@@ -275,7 +348,7 @@ void vec_i8v32n_reverse(size_t size, const int8_t *src, int8_t *dst)
 
 		it = _mm_or_si64(left, right);
 
-		q[units2] = it;
+		q[0] = it;
 	}
 
 	ANY_EMMS();
