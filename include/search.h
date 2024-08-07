@@ -72,11 +72,6 @@ extern int32_t vec_i32v8n_get_range(size_t size, const int32_t *src);
 extern int16_t vec_i16v16n_get_range(size_t size, const int16_t *src);
 extern int8_t vec_i8v32n_get_range(size_t size, const int8_t *src);
 
-extern int32_t vec_i32v8n_get_avg(size_t size, const int32_t *src);
-extern int16_t vec_i16v16n_get_avg(size_t size, const int16_t *src);
-extern int8_t vec_i8v32n_get_avg(size_t size, const int8_t *src);
-
-
 
 /* search */
 

@@ -6,9 +6,9 @@
 #include "../../include/simd_tools.h"
 
 #ifdef __3dNOW__
-#define ANY_EMMS _m_femms
+#define ANY_EMMS() _m_femms()
 #else
-#define ANY_EMMS _m_empty
+#define ANY_EMMS() _m_empty()
 #endif
 
 #ifndef USE_ANDNOT
@@ -16,65 +16,59 @@
 #endif
 
 /* local */
-
 #if 0
 #include <stdio.h>
-static void dump(const char *s, __m64 current)
+static void dump32_64(const char *s, __m64 current)
 {
     ANY_EMMS();
-
     fputs(s, stdout);
-    int16_t *p = (int16_t*)&current;
+ 
+    for (int i = 0; i < 2; ++i)
+    {
+        int32_t it = _mm_cvtsi64_si32(current);
+        current = _mm_srli_si64(current, 32);
+        ANY_EMMS();
+        printf("%d,", (int)it);
+    }
+
+    fputs("\n", stdout);
+}
+static void dump16_64(const char *s, __m64 current)
+{
+    ANY_EMMS();
+    fputs(s, stdout);
+ 
     for (int i = 0; i < 4; ++i)
     {
-        int it = (int16_t)p[i];
-        printf("%d,", it);
+        int16_t it = _mm_cvtsi64_si32(current) & 0xFFFF;
+        current = _mm_srli_si64(current, 16);
+        ANY_EMMS();
+        printf("%d,", (int)it);
     }
 
-    printf("\n");
+    fputs("\n", stdout);
 }
-static void dump8(const char *s, __m64 current)
+static void dump8_64(const char *s, __m64 current)
 {
     ANY_EMMS();
     fputs(s, stdout);
-    int it = (int8_t)(_m_to_int(current) & UINT8_MAX);
-    printf("%d,", it);
-    it = (int8_t)((_m_to_int(current) >> 8) & UINT8_MAX);
-    printf("%d,", it);
-    it = (int8_t)((_m_to_int(current) >> 16) & UINT8_MAX);
-    printf("%d,", it);
-    it = (int8_t)((_m_to_int(current) >> 24) & UINT8_MAX);
-    printf("%d,", it);
-    it = (int8_t)(_m_to_int(_m_psrlqi(current, 32)) & UINT8_MAX);
-    printf("%d,", it);
-    it = (int8_t)((_m_to_int(_m_psrlqi(current, 32)) >> 8) & UINT8_MAX);
-    printf("%d,", it);
-    it = (int8_t)((_m_to_int(_m_psrlqi(current, 32)) >> 16) & UINT8_MAX);
-    printf("%d,", it);
-    it = (int8_t)((_m_to_int(_m_psrlqi(current, 32)) >> 24) & UINT8_MAX);
-    printf("%d\n", it);
-}
-static void dump_u8(const char *s, __m64 current)
-{
-    ANY_EMMS();
-    fputs(s, stdout);
-    uint8_t *p = (void*)&current;
-    int it;
+
+    int8_t *p = (int8_t*)&current;
     for (int i = 0; i < 8; ++i)
     {
-        it = p[i];
-        printf("%c(%02x),", isprint(it) ? it : '.', it);
+        printf("%d,", p[i]);
     }
-    puts("");
+
+    fputs("\n", stdout);
 }
 #endif
 
 
 
-void  vec_i16v16n_abs(size_t size, const int16_t *src)
+void  vec_i16v16n_inplace_abs(size_t size, int16_t *src)
 {
     size_t units = size / 4;
-	const __m64 *p = (const __m64*)src;
+	__m64 *p = (__m64*)src;
 
 	ANY_EMMS();
 	__m64 max_x8 = _mm_set1_pi16(UINT16_MAX);
@@ -136,7 +130,7 @@ void  vec_i16v16n_dist(size_t size, const int16_t *src1, const int16_t *src2, in
 
 	ANY_EMMS();
 
-	for (__m64 *p_end = p + units; p < p_end;)
+	for (const __m64 *p_end = p + units; p < p_end;)
 	{
 		__m64 it = _mm_subs_pi16(*q, *p);
 
@@ -531,6 +525,32 @@ int vec_i8x32xn_get_manhattan_distance(size_t size, const int8_t *src1, const in
 
 
 
+int32_t vec_i32v8n_avg(size_t size, const int32_t *src)
+{
+    return vec_i32v8n_sum_i32(size, src) / size;
+}
+double vec_i32v8n_avg_f64(size_t size, const int32_t *src)
+{
+    return ((double)vec_i32v8n_sum_i32(size, src) / size);
+}
+int16_t vec_i16v16n_avg(size_t size, const int16_t *src)
+{
+    return vec_i16v16n_sum_i16(size, src) / size;
+}
+float vec_i16v16n_avg_f32(size_t size, const int16_t *src)
+{
+    return (float)((double)vec_i16v16n_sum_i16(size, src) / size);
+}
+int8_t vec_i8v32n_avg(size_t size, const int8_t *src)
+{
+    return vec_i8v32n_sum_i32(size, src) / size;
+}
+float vec_i8v32n_avg_f32(size_t size, const int8_t *src)
+{
+    return (float)((double)vec_i8v32n_sum_i32(size, src) / size);
+}
+
+
 /* sum */
 
 int32_t vec_i32v8n_sum_i32(size_t size, const int32_t *src)
@@ -592,8 +612,12 @@ int16_t vec_i16v16n_sum_i16(size_t size, const int16_t *src)
     ANY_EMMS();
     return result;
 }
-size_t vec_i16v16n_sum(size_t size, const int16_t *src)
+int32_t vec_i16v16n_sum_i32(size_t size, const int16_t *src)
 ;
+size_t vec_i16v16n_sum(size_t size, const int16_t *src)
+{
+    return vec_i16v16n_sum_i16(size, src);
+}
 
 // returns i32x2
 static __m64 vec_u16v16n_sum_i32x2(size_t size, const uint16_t *src)
@@ -615,18 +639,18 @@ static __m64 vec_u16v16n_sum_i32x2(size_t size, const uint16_t *src)
         __m64 it_lo = _mm_and_si64(it, mask_lower);
         __m64 it2_lo = _mm_and_si64(it2, mask_lower);
 
-        results = _mm_adds_pi32(results, it_hi);
-        results2 = _mm_adds_pi32(results2, it2_hi);
-        results = _mm_adds_pi32(results, it_lo);
-        results2 = _mm_adds_pi32(results2, it2_lo);
+        results = _mm_add_pi32(results, it_hi);
+        results2 = _mm_add_pi32(results2, it2_hi);
+        results = _mm_add_pi32(results, it_lo);
+        results2 = _mm_add_pi32(results2, it2_lo);
     }
 
-    return _mm_adds_pi32(results, results2);
+    return _mm_add_pi32(results, results2);
 }
 uint16_t vec_u16v16n_sum_u16(size_t size, const uint16_t *src)
 {
-    __m64 results = vec_u16v16n_sum_m64(size, src);
-    results = _mm_adds_pi32(results, _mm_srli_si64(results, 32));
+    __m64 results = vec_u16v16n_sum_i32x2(size, src);
+    results = _mm_add_pi32(results, _mm_srli_si64(results, 32));
     size_t result = _mm_cvtsi64_si32(results) & 0xFFFF;
 
     ANY_EMMS();
@@ -641,14 +665,14 @@ size_t vec_u16v16n_sum(size_t size, const uint16_t *src)
 
     for (int i = 0; i < units; ++i)
     {
-        __m64 results = vec_u16v16n_sum_m64(unit_size, src + i * unit_size);
+        __m64 results = vec_u16v16n_sum_i32x2(unit_size, src + i * unit_size);
         size_t result2 = _mm_cvtsi64_si32(results) & 0xFFFF;
         size_t result3 = _mm_cvtsi64_si32(_mm_srli_si64(results, 32)) & 0xFFFF;
 
         size_t result0 = result;
         result = result0 + result2;
         if (result < result0) result = SIZE_MAX;
-        size_t result0 = result;
+        result0 = result;
         result = result0 + result3;
         if (result < result0) result = SIZE_MAX;
     }
@@ -658,14 +682,14 @@ size_t vec_u16v16n_sum(size_t size, const uint16_t *src)
 
     if (size2 != 0)
     {
-        __m64 results = vec_u16v16n_sum_m64(size2, src + base);
+        __m64 results = vec_u16v16n_sum_i32x2(size2, src + base);
         size_t result2 = _mm_cvtsi64_si32(results) & 0xFFFF;
         size_t result3 = _mm_cvtsi64_si32(_mm_srli_si64(results, 32)) & 0xFFFF;
 
         size_t result0 = result;
         result = result0 + result2;
         if (result < result0) result = SIZE_MAX;
-        size_t result0 = result;
+        result0 = result;
         result = result0 + result3;
         if (result < result0) result = SIZE_MAX;
     }
@@ -707,8 +731,53 @@ int8_t vec_i8v32n_sum_i8(size_t size, const int8_t *src)
     return result;
 }
 
+int32_t vec_i8v32n_sum_i32(size_t size, const int8_t *src)
+{
+    size_t units = size / 8;
+    const __m64 *p = (const void*)src;
+
+    __m64 results = _mm_setzero_si64();
+    __m64 results2 = _mm_setzero_si64();
+
+    for (int i = 0; i < units; ++i)
+    {
+        __m64 it = p[i];
+
+        __m64 zeros = _mm_setzero_si64();
+        __m64 flags = _mm_cmpgt_pi8(zeros, it);
+        __m64 it2 = _mm_unpackhi_pi8(it, flags);
+        it = _mm_unpacklo_pi8(it, flags);
+
+        flags = _mm_cmpgt_pi8(zeros, it);
+        __m64 flags2 = _mm_cmpgt_pi8(zeros, it2);
+        __m64 it3 = _mm_unpackhi_pi16(it, flags);
+        __m64 it4 = _mm_unpackhi_pi16(it2, flags2);
+        it = _mm_unpacklo_pi16(it, flags);
+        it2 = _mm_unpacklo_pi16(it2, flags2);
+
+        results = _mm_add_pi32(results, it);
+        results2 = _mm_add_pi32(results2, it2);
+        results = _mm_add_pi32(results, it3);
+        results2 = _mm_add_pi32(results2, it4);
+    }
+
+    results = _mm_add_pi32(results, results2);
+
+    results2 = _mm_srli_si64(results, 32);
+    results = _mm_add_pi32(results, results2);
+
+    results2 = _mm_srli_si64(results, 16);
+    results = _mm_add_pi32(results, results2);
+
+    int32_t result = _mm_cvtsi64_si32(results);
+    ANY_EMMS();
+    return result;
+}
+
 size_t vec_i8v32n_sum(size_t size, const int8_t *src)
-;
+{
+    return vec_i8v32n_sum_i32(size, src);
+}
 
 // returns i16x4
 static __m64 vec_u8v32n_sum_i16x4(size_t size, const uint8_t *src)
@@ -740,7 +809,7 @@ static __m64 vec_u8v32n_sum_i16x4(size_t size, const uint8_t *src)
 }
 uint8_t vec_u8v32n_sum_u8(size_t size, const uint8_t *src)
 {
-    __m64 results = vec_u8v32n_sum_m64(size, src);
+    __m64 results = vec_u8v32n_sum_i16x4(size, src);
     results = _mm_adds_pi16(results, _mm_srli_si64(results, 16));
     results = _mm_adds_pi16(results, _mm_srli_si64(results, 32));
     size_t result = _mm_cvtsi64_si32(results) & 0xFFFF;
@@ -759,7 +828,7 @@ size_t vec_u8v32n_sum(size_t size, const uint8_t *src)
     {
         __m64 results = vec_u8v32n_sum_i16x4(unit_size, src + i * unit_size);
         const __m64 mask_lower = _mm_set1_pi32(0x0000FFFF);
-        __m64 results2 = _mm_srli_si32(results, 16);
+        __m64 results2 = _mm_srli_si64(results, 16);
         results = _mm_and_si64(results, mask_lower);
         results = _mm_add_pi32(results, results2);
         results = _mm_add_pi32(results, _mm_srli_si64(results, 32));
@@ -777,7 +846,7 @@ size_t vec_u8v32n_sum(size_t size, const uint8_t *src)
     {
         __m64 results = vec_u8v32n_sum_i16x4(size2, src + base);
         const __m64 mask_lower = _mm_set1_pi32(0x0000FFFF);
-        __m64 results2 = _mm_srli_si32(results, 16);
+        __m64 results2 = _mm_srli_si64(results, 16);
         results = _mm_and_si64(results, mask_lower);
         results = _mm_add_pi32(results, results2);
         results = _mm_add_pi32(results, _mm_srli_si64(results, 32));
@@ -793,8 +862,183 @@ size_t vec_u8v32n_sum(size_t size, const uint8_t *src)
 }
 
 
-/* assignment */
+/* deviation sum of square */
 
-void vec_i32v8n_set_seq(size_t size, const int32_t *src, int32_t start, int32_t diff)
+size_t vec_i32v8n_dss_with_avg(size_t size, const int32_t *src, int32_t _avg)
 ;
+int64_t vec_i32v8n_dss_with_avg_i64(size_t size, const int32_t *src, int32_t _avg);
+size_t vec_i16v16n_dss_with_avg(size_t size, const int16_t *src, int16_t _avg)
+;
+int32_t vec_i16v16n_dss_with_avg_i32(size_t size, const int16_t *src, int16_t _avg);
+int64_t vec_i16v16n_dss_with_avg_i64(size_t size, const int16_t *src, int16_t _avg);
+uint32_t vec_u16v16n_dss_with_avg_u32(size_t size, const uint16_t *src, uint16_t _avg);
+uint64_t vec_u16v16n_dss_with_avg_u64(size_t size, const uint16_t *src, uint16_t _avg);
+size_t vec_i8v32n_dss_with_avg(size_t size, const int8_t *src, int8_t _avg)
+{
+    return vec_i8v32n_dss_with_avg_i32(size, src, _avg);
+}
+int16_t vec_i8v32n_dss_with_avg_i16(size_t size, const int8_t *src, int8_t _avg)
+{
+    return vec_i8v32n_dss_with_avg_i32(size, src, _avg);
+}
+int32_t vec_i8v32n_dss_with_avg_i32(size_t size, const int8_t *src, int8_t _avg)
+{
+    size_t units = size / 8;
+    const __m64 *p = (const void*)src;
+
+    __m64 results = _mm_setzero_si64();
+    __m64 avgs = _mm_set1_pi16(_avg);
+
+    for (int i = 0; i < units; ++i)
+    {
+        __m64 it = p[i];
+
+        __m64 zeros = _mm_setzero_si64();
+        __m64 flags = _mm_cmpgt_pi8(zeros, it);
+        __m64 it2 = _mm_unpackhi_pi8(it, flags);
+        it = _mm_unpacklo_pi8(it, flags);
+
+        it = _mm_subs_pi16(it, avgs);
+        it2 = _mm_subs_pi16(it2, avgs);
+
+        __m64 it_hi = _mm_mulhi_pi16(it, it);
+        it = _mm_mullo_pi16(it, it);
+        __m64 it2_hi = _mm_mulhi_pi16(it2, it2);
+        it2 = _mm_mullo_pi16(it2, it2);
+        __m64 it3 = _mm_unpackhi_pi16(it, it_hi);
+        __m64 it4 = _mm_unpackhi_pi16(it2, it2_hi);
+        it = _mm_unpacklo_pi16(it, it_hi);
+        it2 = _mm_unpacklo_pi16(it2, it2_hi);
+
+        it = _mm_add_pi32(it, it3);
+        it2 = _mm_add_pi32(it2, it4);
+
+        it = _mm_add_pi32(it, it2);
+        results = _mm_add_pi32(results, it);
+    }
+
+    int32_t result = _mm_cvtsi64_si32(results);
+    results = _mm_srli_si64(results, 32);
+    int32_t result2 = _mm_cvtsi64_si32(results);
+    ANY_EMMS();
+    return result + result2;
+}
+size_t vec_u8v32n_dss_with_avg(size_t size, const uint8_t *src, uint8_t _avg)
+;
+uint16_t vec_u8v32n_dss_with_avg_u16(size_t size, const uint8_t *src, uint8_t _avg);
+uint32_t vec_u8v32n_dss_with_avg_u32(size_t size, const uint8_t *src, uint8_t _avg);
+
+size_t vec_i32v8n_dss(size_t size, const int32_t *src)
+;
+// {
+//     size_t _avg = vec_i32v8n_avg(size, src);
+//     return vec_i32v8n_dss_with_avg(size, src, _avg);    
+// }
+int64_t vec_i32v8n_dss_i64(size_t size, const int32_t *src);
+size_t vec_i16v16n_dss(size_t size, const int16_t *src)
+;
+int32_t vec_i16v16n_dss_i32(size_t size, const int16_t *src);
+int64_t vec_i16v16n_dss_i64(size_t size, const int16_t *src);
+uint32_t vec_u16v16n_dss_u32(size_t size, const uint16_t *src);
+uint64_t vec_u16v16n_dss_u64(size_t size, const uint16_t *src);
+size_t vec_i8v32n_dss(size_t size, const int8_t *src)
+{
+    int8_t _avg = vec_i8v32n_avg(size, src);
+    return vec_i8v32n_dss_with_avg_i32(size, src, _avg);
+}
+int16_t vec_i8v32n_dss_i16(size_t size, const int8_t *src);
+int32_t vec_i8v32n_dss_i32(size_t size, const int8_t *src);
+size_t vec_u8v32n_dss(size_t size, const uint8_t *src)
+;
+uint16_t vec_u8v32n_dss_u16(size_t size, const uint8_t *src);
+uint32_t vec_u8v32n_dss_u32(size_t size, const uint8_t *src);
+
+
+/* residual sum of square */
+
+size_t vec_i32v8n_rss(size_t size, const int32_t *src, const int32_t *predicted)
+;
+int64_t vec_i32v8n_rss_i64(size_t size, const int32_t *src, const int32_t *predicted);
+size_t vec_i16v16n_rss(size_t size, const int16_t *src, const int16_t *predicted)
+;
+int32_t vec_i16v16n_rss_i32(size_t size, const int16_t *src, const int16_t *predicted);
+int64_t vec_i16v16n_rss_i64(size_t size, const int16_t *src, const int16_t *predicted);
+uint32_t vec_u16v16n_rss_u32(size_t size, const uint16_t *src, const uint16_t *predicted);
+uint64_t vec_u16v16n_rss_u64(size_t size, const uint16_t *src, const uint16_t *predicted);
+size_t vec_i8v32n_rss(size_t size, const uint8_t *src, const uint8_t *predicted)
+{
+    return vec_i8v32n_rss_i32(size, src, predicted);
+}
+int16_t vec_i8v32n_rss_i16(size_t size, const int8_t *src, const int8_t *predicted);
+int32_t vec_i8v32n_rss_i32(size_t size, const int8_t *src, const int8_t *predicted)
+{
+    size_t units = size / 8;
+    const __m64 *p = (const void*)src;
+    const __m64 *q = (const void*)predicted;
+
+    __m64 results = _mm_setzero_si64();
+
+    for (int i = 0; i < units; ++i)
+    {
+        __m64 it = p[i];
+        __m64 pred = q[i];
+
+        __m64 zeros = _mm_setzero_si64();
+        __m64 flags = _mm_cmpgt_pi8(zeros, it);
+        __m64 flags2 = _mm_cmpgt_pi8(zeros, pred);
+        __m64 it2 = _mm_unpackhi_pi8(it, flags);
+        __m64 pred2 = _mm_unpackhi_pi8(pred, flags2);
+        it = _mm_unpacklo_pi8(it, flags);
+        pred = _mm_unpacklo_pi8(pred, flags2);
+
+        it = _mm_subs_pi16(it, pred);
+        it2 = _mm_subs_pi16(it2, pred2);
+
+        __m64 it_hi = _mm_mulhi_pi16(it, it);
+        it = _mm_mullo_pi16(it, it);
+        __m64 it2_hi = _mm_mulhi_pi16(it2, it2);
+        it2 = _mm_mullo_pi16(it2, it2);
+        __m64 it3 = _mm_unpackhi_pi16(it, it_hi);
+        __m64 it4 = _mm_unpackhi_pi16(it2, it2_hi);
+        it = _mm_unpacklo_pi16(it, it_hi);
+        it2 = _mm_unpacklo_pi16(it2, it2_hi);
+
+        it = _mm_add_pi32(it, it3);
+        it2 = _mm_add_pi32(it2, it4);
+
+        it = _mm_add_pi32(it, it2);
+        results = _mm_add_pi32(results, it);
+    }
+
+    int32_t result = _mm_cvtsi64_si32(results);
+    results = _mm_srli_si64(results, 32);
+    int32_t result2 = _mm_cvtsi64_si32(results);
+    ANY_EMMS();
+    return result + result2;
+}
+uint16_t vec_u8v32n_rss_u16(size_t size, const uint8_t *src, const uint8_t *predicted);
+uint32_t vec_u8v32n_rss_u32(size_t size, const uint8_t *src, const uint8_t *predicted);
+
+/* explained sum of square */
+/* sigma{ (y[i] - avg(x))^2 } */
+
+size_t vec_i32v8n_ess(size_t size, const int32_t *src, const int32_t *predicted)
+;
+int64_t vec_i32v8n_ess_i64(size_t size, const int32_t *src, const int32_t *predicted);
+size_t vec_i16v16n_ess(size_t size, const int16_t *src, const int16_t *predicted)
+;
+int32_t vec_i16v16n_ess_i32(size_t size, const int16_t *src, const int16_t *predicted);
+int64_t vec_i16v16n_ess_i64(size_t size, const int16_t *src, const int16_t *predicted);
+uint32_t vec_u16v16n_ess_u32(size_t size, const uint16_t *src, const uint16_t *predicted);
+uint64_t vec_u16v16n_ess_u64(size_t size, const uint16_t *src, const uint16_t *predicted);
+size_t vec_i8v32n_ess(size_t size, const int8_t *src, const int8_t *predicted)
+{
+    int8_t _avg = vec_i8v32n_avg(size, src);
+    return vec_i8v32n_dss_with_avg_i32(size, predicted, _avg);
+}
+int16_t vec_i8v32n_ess_i16(size_t size, const int8_t *src, const int8_t *predicted);
+int32_t vec_i8v32n_ess_i32(size_t size, const int8_t *src, const int8_t *predicted);
+size_t vec_u8v32n_ess(size_t size, const uint8_t *src, const uint8_t *predicted);
+uint16_t vec_u8v32n_ess_u16(size_t size, const uint8_t *src, const uint8_t *predicted);
+uint32_t vec_u8v32n_ess_u32(size_t size, const uint8_t *src, const uint8_t *predicted);
 

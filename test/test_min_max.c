@@ -2,38 +2,28 @@
 #include <stdint.h>
 #include <stdalign.h>
 
-#include "../include/search.h"
-
-#include "data16.inc"
+#define DATA_SIZE 0x8000000
+alignas(32) int16_t data[DATA_SIZE];
 
 int main()
 {
     for (int i = 0; i < 1; ++i)
     // for (int i = 0; i < INT16_MAX; ++i)
     {
-        int16_t min0 = INT16_MAX;
-        size_t min0_idx = SIZE_MAX;
-        int16_t max0 = INT16_MIN;
-        size_t max0_idx = SIZE_MAX;
-        for (int j = 0; j < DATA16_SIZE; ++j)
-        {
-            int16_t it = data16[j];
-            if (it < min0)
-            {
-                min0 = it;
-                min0_idx = j;
-            }
-            if (it > max0)
-            {
-                max0 = it;
-                max0_idx = j;
-            }
-        }
+        int16_t min0 = INT16_MIN + rand() % 64;
+        size_t min0_idx = rand() % DATA_SIZE;
+        int16_t max0 = INT16_MAX - rand() % 64;
+        size_t max0_idx = rand() % DATA_SIZE;
+        size_t range = abs(max0 - min0) - 2;
+        for (int j = 0; j < DATA_SIZE; ++j) data[j] = min0 + 1 + rand() % range;
+        data[min0_idx] = min0;
+        data[max0_idx] = max0;
 
-        size_t min_idx = vec_i16v16n_get_min_index(DATA16_SIZE, data16);
-        int16_t min = vec_i16v16n_get_min(DATA16_SIZE, data16);
-        size_t max_idx = vec_i16v16n_get_max_index(DATA16_SIZE, data16);
-        int16_t max = vec_i16v16n_get_max(DATA16_SIZE, data16);
+
+        size_t min_idx = vec_i16v16n_get_min_index(DATA_SIZE, data);
+        int16_t min = vec_i16v16n_get_min(DATA_SIZE, data);
+        size_t max_idx = vec_i16v16n_get_max_index(DATA_SIZE, data);
+        int16_t max = vec_i16v16n_get_max(DATA_SIZE, data);
 
         if (min0 != min || min0_idx != min_idx
                 || max0 != max || max0_idx != max_idx)
@@ -95,4 +85,13 @@ int main()
     generic_minmax     0m25.286s
     neon_min_max       0m10.266s
     neon_minmax        0m5.562s        15.39%
+
+** prog=[min_idx, min, max_idx, max],
+ * sample=avg(5samples)
+2023-11-06  Core i5-4200M + ddr3(1600MHz) msvc(/O2) x86  data_size=[0x8000000]
+    generic  0m4.561s
+    mmx      0m4.514s
+    mmx_andn 0m4.482s
+    sse2     0m4.310s
+    avx2     0m4.325s
 **/

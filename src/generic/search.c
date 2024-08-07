@@ -323,9 +323,6 @@ int8_t vec_i8v32n_get_range(size_t size, const int8_t *src)
 
     return r;
 }
-int32_t vec_i32v8n_get_avg(size_t size, const int32_t *src);
-int16_t vec_i16v16n_get_avg(size_t size, const int16_t *src);
-int8_t vec_i8v32n_get_avg(size_t size, const int8_t *src);
 
 
 /* search */

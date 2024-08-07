@@ -11,7 +11,7 @@
 
 
 // -O2 is faster as mmx/sse2 versions on Atom N2700
-void  vec_i16v16n_abs(size_t size, const int16_t *src)
+void  vec_i16v16n_inplace_abs(size_t size, int16_t *src)
 {
     int i;
     #pragma omp parallel for num_threads(4)
@@ -251,6 +251,32 @@ int vec_i8x32xn_get_manhattan_distance(size_t size, const int8_t *src1, const in
 }
 
 
+int32_t vec_i32v8n_avg(size_t size, const int32_t *src)
+{
+    return vec_i32v8n_sum(size, src) / size;
+}
+double vec_i32v8n_avg_f64(size_t size, const int32_t *src)
+{
+    return ((double)vec_i32v8n_sum(size, src) / size);
+}
+int16_t vec_i16v16n_avg(size_t size, const int16_t *src)
+{
+    return vec_i16v16n_sum(size, src) / size;
+}
+float vec_i16v16n_avg_f32(size_t size, const int16_t *src)
+{
+    return (float)((double)vec_i16v16n_sum(size, src) / size);
+}
+int8_t vec_i8v32n_avg(size_t size, const int8_t *src)
+{
+    return vec_i8v32n_sum(size, src) / size;
+}
+float vec_i8v32n_avg_f32(size_t size, const int8_t *src)
+{
+    return (float)((double)vec_i8v32n_sum(size, src) / size);
+}
+
+
 /* sum */
 
 int32_t vec_i32v8n_sum_i32(size_t size, const int32_t *src)
@@ -294,7 +320,23 @@ size_t vec_i16v16n_sum(size_t size, const int16_t *src)
 int8_t vec_i8v32n_sum_i8(size_t size, const int8_t *src)
 {
     size_t result = vec_i8v32n_sum(size, src);
-    return result > INT8_MAX ? INT8_MAX : result;
+    return result > INT8_MAX ? INT32_MAX
+        : result < INT8_MIN ? INT32_MIN
+        : result;
+}
+int16_t vec_i8v32n_sum_i16(size_t size, const int8_t *src)
+{
+    size_t result = vec_i8v32n_sum(size, src);
+    return result > INT16_MAX ? INT32_MAX
+        : result < INT16_MIN ? INT32_MIN
+        : result;
+}
+int32_t vec_i8v32n_sum_i32(size_t size, const int8_t *src)
+{
+    size_t result = vec_i8v32n_sum(size, src);
+    return result > INT32_MAX ? INT32_MAX
+        : result < INT32_MIN ? INT32_MIN
+        : result;
 }
 size_t vec_i8v32n_sum(size_t size, const int8_t *src)
 {
@@ -310,6 +352,168 @@ size_t vec_i8v32n_sum(size_t size, const int8_t *src)
     return result;
 }
 
+
+/* deviation sum of square */
+
+size_t vec_i32v8n_dss_with_avg(size_t size, const int32_t *src, int32_t _avg)
+{
+    size_t result = 0;
+
+    int i;
+    #pragma omp parallel for num_threads(4) reduction(+:result)
+    for (i = 0; i < size; ++i)
+    {
+        size_t tmp = (size_t)src[i] - _avg;
+        result += tmp * tmp;
+    }
+
+    return result;
+}
+int64_t vec_i32v8n_dss_with_avg_i64(size_t size, const int32_t *src, int32_t _avg);
+size_t vec_i16v16n_dss_with_avg(size_t size, const int16_t *src, int16_t _avg)
+{
+    size_t result = 0;
+
+    int i;
+    #pragma omp parallel for num_threads(4) reduction(+:result)
+    for (i = 0; i < size; ++i)
+    {
+        size_t tmp = (size_t)src[i] - _avg;
+        result += tmp * tmp;
+    }
+
+    return result;
+}
+int32_t vec_i16v16n_dss_with_avg_i32(size_t size, const int16_t *src, int16_t _avg);
+int64_t vec_i16v16n_dss_with_avg_i64(size_t size, const int16_t *src, int16_t _avg);
+uint32_t vec_u16v16n_dss_with_avg_u32(size_t size, const uint16_t *src, uint16_t _avg);
+uint64_t vec_u16v16n_dss_with_avg_u64(size_t size, const uint16_t *src, uint16_t _avg);
+size_t vec_i8v32n_dss_with_avg(size_t size, const int8_t *src, int8_t _avg)
+{
+    size_t result = 0;
+
+    int i;
+    #pragma omp parallel for num_threads(4) reduction(+:result)
+    for (i = 0; i < size; ++i)
+    {
+        size_t tmp = (size_t)src[i] - _avg;
+        result += tmp * tmp;
+    }
+
+    return result;
+}
+int32_t vec_i8v32n_dss_with_avg_i32(size_t size, const int8_t *src, int8_t _avg);
+size_t vec_u8v32n_dss_with_avg(size_t size, const uint8_t *src, uint8_t _avg)
+;
+uint16_t vec_u8v32n_dss_with_avg_u16(size_t size, const uint8_t *src, uint8_t _avg);
+uint32_t vec_u8v32n_dss_with_avg_u32(size_t size, const uint8_t *src, uint8_t _avg);
+size_t vec_i32v8n_dss(size_t size, const int32_t *src)
+{
+    size_t _avg = vec_i32v8n_avg(size, src);
+    return vec_i32v8n_dss_with_avg(size, src, _avg);
+}
+int64_t vec_i32v8n_dss_i64(size_t size, const int32_t *src);
+size_t vec_i16v16n_dss(size_t size, const int16_t *src)
+{
+    size_t _avg = vec_i16v16n_avg(size, src);
+    return vec_i16v16n_dss_with_avg(size, src, _avg);
+}
+int32_t vec_i16v16n_dss_i32(size_t size, const int16_t *src);
+int64_t vec_i16v16n_dss_i64(size_t size, const int16_t *src);
+uint32_t vec_u16v16n_dss_u32(size_t size, const uint16_t *src);
+uint64_t vec_u16v16n_dss_u64(size_t size, const uint16_t *src);
+size_t vec_i8v32n_dss(size_t size, const int8_t *src)
+{
+    size_t _avg = vec_i8v32n_avg(size, src);
+    return vec_i8v32n_dss_with_avg(size, src, _avg);
+}
+int16_t vec_i8v32n_dss_i16(size_t size, const int8_t *src);
+int32_t vec_i8v32n_dss_i32(size_t size, const int8_t *src);
+size_t vec_u8v32n_dss(size_t size, const uint8_t *src)
+;
+uint16_t vec_u8v32n_dss_u16(size_t size, const uint8_t *src);
+uint32_t vec_u8v32n_dss_u32(size_t size, const uint8_t *src);
+
+
+/* residual sum of square */
+
+size_t vec_i32v8n_rss(size_t size, const int32_t *src, const int32_t *predicted)
+{
+    size_t result = 0;
+
+    int i;
+    #pragma omp parallel for num_threads(4) reduction(+:result)
+    for (i = 0; i < size; ++i)
+    {
+        size_t tmp = (size_t)src[i] - predicted[i];
+        result += tmp * tmp;
+    }
+
+    return result;
+}
+int64_t vec_i32v8n_rss_i64(size_t size, const int32_t *src, const int32_t *predicted);
+size_t vec_i16v16n_rss(size_t size, const int16_t *src, const int16_t *predicted)
+{
+    size_t result = 0;
+
+    int i;
+    #pragma omp parallel for num_threads(4) reduction(+:result)
+    for (i = 0; i < size; ++i)
+    {
+        size_t tmp = (size_t)src[i] - predicted[i];
+        result += tmp * tmp;
+    }
+
+    return result;
+}
+int32_t vec_i16v16n_rss_i32(size_t size, const int16_t *src, const int16_t *predicted);
+int64_t vec_i16v16n_rss_i64(size_t size, const int16_t *src, const int16_t *predicted);
+uint32_t vec_u16v16n_rss_u32(size_t size, const uint16_t *src, const uint16_t *predicted);
+uint64_t vec_u16v16n_rss_u64(size_t size, const uint16_t *src, const uint16_t *predicted);
+size_t vec_i8v32n_rss(size_t size, const uint8_t *src, const uint8_t *predicted)
+{
+    size_t result = 0;
+
+    int i;
+    #pragma omp parallel for num_threads(4) reduction(+:result)
+    for (i = 0; i < size; ++i)
+    {
+        size_t tmp = (size_t)src[i] - predicted[i];
+        result += tmp * tmp;
+    }
+
+    return result;
+}
+int16_t vec_i8v32n_rss_i16(size_t size, const int8_t *src, const int8_t *predicted);
+int32_t vec_i8v32n_rss_i32(size_t size, const int8_t *src, const int8_t *predicted);
+uint16_t vec_u8v32n_rss_u16(size_t size, const uint8_t *src, const uint8_t *predicted);
+uint32_t vec_u8v32n_rss_u32(size_t size, const uint8_t *src, const uint8_t *predicted);
+
+size_t vec_i32v8n_ess(size_t size, const int32_t *src, const int32_t *predicted)
+{
+    size_t _avg = vec_i32v8n_avg(size, src);
+    return vec_i32v8n_dss_with_avg(size, predicted, _avg);
+}
+int64_t vec_i32v8n_ess_i64(size_t size, const int32_t *src, const int32_t *predicted);
+size_t vec_i16v16n_ess(size_t size, const int16_t *src, const int16_t *predicted)
+{
+    size_t _avg = vec_i16v16n_avg(size, src);
+    return vec_i16v16n_dss_with_avg(size, predicted, _avg);
+}
+int32_t vec_i16v16n_ess_i32(size_t size, const int16_t *src, const int16_t *predicted);
+int64_t vec_i16v16n_ess_i64(size_t size, const int16_t *src, const int16_t *predicted);
+uint32_t vec_u16v16n_ess_u32(size_t size, const uint16_t *src, const uint16_t *predicted);
+uint64_t vec_u16v16n_ess_u64(size_t size, const uint16_t *src, const uint16_t *predicted);
+size_t vec_i8v32n_ess(size_t size, const int8_t *src, const int8_t *predicted)
+{
+    size_t _avg = vec_i8v32n_avg(size, src);
+    return vec_i8v32n_dss_with_avg(size, predicted, _avg);
+}
+int16_t vec_i8v32n_ess_i16(size_t size, const int8_t *src, const int8_t *predicted);
+int32_t vec_i8v32n_ess_i32(size_t size, const int8_t *src, const int8_t *predicted);
+size_t vec_u8v32n_ess(size_t size, const uint8_t *src, const uint8_t *predicted);
+uint16_t vec_u8v32n_ess_u16(size_t size, const uint8_t *src, const uint8_t *predicted);
+uint32_t vec_u8v32n_ess_u32(size_t size, const uint8_t *src, const uint8_t *predicted);
 
 
 /* rescale */
@@ -398,7 +602,7 @@ int vec_i16v32n_densify_i8v32n(size_t input_size, const int16_t *src, int8_t *ds
 
 /* assignment/*/
 
-void vec_i32v8n_set_seq(size_t size, const int32_t *src, int32_t start, int32_t diff)
+void vec_i32v8n_set_seq(size_t size, int32_t *dst, int32_t start, int32_t diff)
 {
     int32_t it = start;
 
@@ -406,11 +610,11 @@ void vec_i32v8n_set_seq(size_t size, const int32_t *src, int32_t start, int32_t 
     #pragma omp parallel for num_threads(4)
     for (i = 0; i < size; ++i)
     {
-        src[i] = it;
+        dst[i] = it;
         it += diff;
     }
 }
-void vec_i16v16n_set_seq(size_t size, const int16_t *src, int16_t start, int16_t diff)
+void vec_i16v16n_set_seq(size_t size, int16_t *dst, int16_t start, int16_t diff)
 {
     int16_t it = start;
 
@@ -418,11 +622,11 @@ void vec_i16v16n_set_seq(size_t size, const int16_t *src, int16_t start, int16_t
     #pragma omp parallel for num_threads(4)
     for (i = 0; i < size; ++i)
     {
-        src[i] = it;
+        dst[i] = it;
         it += diff;
     }
 }
-void vec_i8v32n_set_seq(size_t size, const int8_t *src, int8_t start, int8_t diff)
+void vec_i8v32n_set_seq(size_t size, int8_t *dst, int8_t start, int8_t diff)
 {
     int8_t it = start;
 
@@ -430,7 +634,7 @@ void vec_i8v32n_set_seq(size_t size, const int8_t *src, int8_t start, int8_t dif
     #pragma omp parallel for num_threads(4)
     for (i = 0; i < size; ++i)
     {
-        src[i] = it;
+        dst[i] = it;
         it += diff;
     }
 }

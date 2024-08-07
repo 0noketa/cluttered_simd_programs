@@ -35,12 +35,15 @@ extern int32_t vec_i32v8n_get_range(size_t size, const int32_t *src);
 extern int16_t vec_i16v16n_get_range(size_t size, const int16_t *src);
 extern int8_t vec_i8v32n_get_range(size_t size, const int8_t *src);
 
-extern int32_t vec_i32v8n_get_avg(size_t size, const int32_t *src);
-extern int16_t vec_i16v16n_get_avg(size_t size, const int16_t *src);
-extern int8_t vec_i8v32n_get_avg(size_t size, const int8_t *src);
+extern int32_t vec_i32v8n_avg(size_t size, const int32_t *src);
+extern int32_t vec_i32v8n_avg_acc1(size_t size, const int32_t *src);
+extern int16_t vec_i16v16n_avg(size_t size, const int16_t *src);
+extern int16_t vec_i16v16n_avg_acc1(size_t size, const int16_t *src);
+extern int8_t vec_i8v32n_avg(size_t size, const int8_t *src);
+extern int8_t vec_i8v32n_avg_acc1(size_t size, const int8_t *src);
 
 
-extern void  vec_i16v16n_abs(size_t size, const int16_t *src);
+extern void  vec_i16v16n_inplace_abs(size_t size, int16_t *src);
 
 extern void  vec_i16v16n_diff(size_t size, int16_t *base, int16_t *target, int16_t *dst);
 extern void  vec_i16v16n_dist(size_t size, const int16_t *src1, const int16_t *src2, int16_t *dst);
@@ -73,8 +76,8 @@ extern void vec_u256n_ror(size_t size, uint8_t *src, int n, uint8_t *dst);
 
 /* hamming weight */
 
-extern size_t vec_u256n_get_hamming_weight(size_t size, uint8_t *src);
-extern size_t vec_u256n_get_hamming_distance(size_t size, uint8_t *src1, uint8_t *src2);
+extern size_t vec_u256n_get_hamming_weight(size_t size, const uint8_t *src);
+extern size_t vec_u256n_get_hamming_distance(size_t size, const uint8_t *src1, const uint8_t *src2);
 extern size_t vec_i32v8n_get_hamming_distance(size_t size, const int32_t *src1, const int32_t *src2);
 extern size_t vec_i16v16n_get_hamming_distance(size_t size, const int16_t *src1, const int16_t *src2);
 extern size_t vec_i8v32n_get_hamming_distance(size_t size, const int8_t *src1, const int8_t *src2);
@@ -87,16 +90,85 @@ extern int vec_i8x32xn_get_manhattan_distance(size_t size, const int8_t *src1, c
 
 /* sum */
 
-extern int32_t vec_i32v8_sum_i32(size_t size, const int32_t *src);
-extern uint32_t vec_u32v8_sum_u32(size_t size, const uint32_t *src);
-extern int16_t vec_i16v16_sum_i16(size_t size, const int16_t *src);
-extern size_t vec_i16v16_sum(size_t size, const int16_t *src);
-extern uint16_t vec_u16v16_sum_u16(size_t size, const uint16_t *src);
-extern size_t vec_u16v16_sum(size_t size, const uint16_t *src);
-extern int8_t vec_i8v32_sum_i8(size_t size, const int8_t *src);
-extern size_t vec_i8v32_sum(size_t size, const int8_t *src);
-extern uint8_t vec_u8v32_sum_u8(size_t size, const uint8_t *src);
-extern size_t vec_u8v32_sum(size_t size, const uint8_t *src);
+extern size_t vec_i32v8n_sum(size_t size, const int32_t *src);
+extern int32_t vec_i32v8n_sum_i32(size_t size, const int32_t *src);
+extern uint32_t vec_u32v8n_sum_u32(size_t size, const uint32_t *src);
+extern size_t vec_i16v16n_sum(size_t size, const int16_t *src);
+extern int16_t vec_i16v16n_sum_i16(size_t size, const int16_t *src);
+extern int32_t vec_i16v16n_sum_i32(size_t size, const int16_t *src);
+extern size_t vec_u16v16n_sum(size_t size, const uint16_t *src);
+extern uint16_t vec_u16v16n_sum_u16(size_t size, const uint16_t *src);
+extern uint32_t vec_u16v16n_sum_u32(size_t size, const uint16_t *src);
+extern size_t vec_i8v32n_sum(size_t size, const int8_t *src);
+extern int8_t vec_i8v32n_sum_i8(size_t size, const int8_t *src);
+extern int16_t vec_i8v32n_sum_i16(size_t size, const int8_t *src);
+extern size_t vec_u8v32n_sum(size_t size, const uint8_t *src);
+extern uint8_t vec_u8v32n_sum_u8(size_t size, const uint8_t *src);
+extern uint16_t vec_u8v32n_sum_u16(size_t size, const uint8_t *src);
+
+/* deviation sum of square */
+
+extern size_t vec_i32v8n_dss_with_avg(size_t size, const int32_t *src, int32_t _avg);
+extern int64_t vec_i32v8n_dss_with_avg_i64(size_t size, const int32_t *src, int32_t _avg);
+extern size_t vec_i16v16n_dss_with_avg(size_t size, const int16_t *src, int16_t _avg);
+extern int32_t vec_i16v16n_dss_with_avg_i32(size_t size, const int16_t *src, int16_t _avg);
+extern int64_t vec_i16v16n_dss_with_avg_i64(size_t size, const int16_t *src, int16_t _avg);
+extern uint32_t vec_u16v16n_dss_with_avg_u32(size_t size, const uint16_t *src, uint16_t _avg);
+extern uint64_t vec_u16v16n_dss_with_avg_u64(size_t size, const uint16_t *src, uint16_t _avg);
+extern size_t vec_i8v32n_dss_with_avg(size_t size, const int8_t *src, int8_t _avg);
+extern int16_t vec_i8v32n_dss_with_avg_i16(size_t size, const int8_t *src, int8_t _avg);
+extern int32_t vec_i8v32n_dss_with_avg_i32(size_t size, const int8_t *src, int8_t _avg);
+extern size_t vec_u8v32n_dss_with_avg(size_t size, const uint8_t *src, uint8_t _avg);
+extern uint16_t vec_u8v32n_dss_with_avg_u16(size_t size, const uint8_t *src, uint8_t _avg);
+extern uint32_t vec_u8v32n_dss_with_avg_u32(size_t size, const uint8_t *src, uint8_t _avg);
+
+extern size_t vec_i32v8n_dss(size_t size, const int32_t *src);
+extern int64_t vec_i32v8n_dss_i64(size_t size, const int32_t *src);
+extern size_t vec_i16v16n_dss(size_t size, const int16_t *src);
+extern int32_t vec_i16v16n_dss_i32(size_t size, const int16_t *src);
+extern int64_t vec_i16v16n_dss_i64(size_t size, const int16_t *src);
+extern uint32_t vec_u16v16n_dss_u32(size_t size, const uint16_t *src);
+extern uint64_t vec_u16v16n_dss_u64(size_t size, const uint16_t *src);
+extern size_t vec_i8v32n_dss(size_t size, const int8_t *src);
+extern int16_t vec_i8v32n_dss_i16(size_t size, const int8_t *src);
+extern int32_t vec_i8v32n_dss_i32(size_t size, const int8_t *src);
+extern size_t vec_u8v32n_dss(size_t size, const uint8_t *src);
+extern uint16_t vec_u8v32n_dss_u16(size_t size, const uint8_t *src);
+extern uint32_t vec_u8v32n_dss_u32(size_t size, const uint8_t *src);
+
+/* residual sum of square */
+
+extern size_t vec_i32v8n_rss(size_t size, const int32_t *src, const int32_t *predicted);
+extern int64_t vec_i32v8n_rss_i64(size_t size, const int32_t *src, const int32_t *predicted);
+extern size_t vec_i16v16n_rss(size_t size, const int16_t *src, const int16_t *predicted);
+extern int32_t vec_i16v16n_rss_i32(size_t size, const int16_t *src, const int16_t *predicted);
+extern int64_t vec_i16v16n_rss_i64(size_t size, const int16_t *src, const int16_t *predicted);
+extern uint32_t vec_u16v16n_rss_u32(size_t size, const uint16_t *src, const uint16_t *predicted);
+extern uint64_t vec_u16v16n_rss_u64(size_t size, const uint16_t *src, const uint16_t *predicted);
+extern size_t vec_i8v32n_rss(size_t size, const uint8_t *src, const uint8_t *predicted);
+extern int16_t vec_i8v32n_rss_i16(size_t size, const int8_t *src, const int8_t *predicted);
+extern int32_t vec_i8v32n_rss_i32(size_t size, const int8_t *src, const int8_t *predicted);
+extern size_t vec_u8v32n_rss(size_t size, const uint8_t *src, const uint8_t *predicted);
+extern uint16_t vec_u8v32n_rss_u16(size_t size, const uint8_t *src, const uint8_t *predicted);
+extern uint32_t vec_u8v32n_rss_u32(size_t size, const uint8_t *src, const uint8_t *predicted);
+
+/* explained sum of square */
+/* sigma{ (y[i] - avg(x))^2 } */
+
+extern size_t vec_i32v8n_ess(size_t size, const int32_t *src, const int32_t *predicted);
+extern int64_t vec_i32v8n_ess_i64(size_t size, const int32_t *src, const int32_t *predicted);
+extern size_t vec_i16v16n_ess(size_t size, const int16_t *src, const int16_t *predicted);
+extern int32_t vec_i16v16n_ess_i32(size_t size, const int16_t *src, const int16_t *predicted);
+extern int64_t vec_i16v16n_ess_i64(size_t size, const int16_t *src, const int16_t *predicted);
+extern uint32_t vec_u16v16n_ess_u32(size_t size, const uint16_t *src, const uint16_t *predicted);
+extern uint64_t vec_u16v16n_ess_u64(size_t size, const uint16_t *src, const uint16_t *predicted);
+extern size_t vec_i8v32n_ess(size_t size, const int8_t *src, const int8_t *predicted);
+extern int16_t vec_i8v32n_ess_i16(size_t size, const int8_t *src, const int8_t *predicted);
+extern int32_t vec_i8v32n_ess_i32(size_t size, const int8_t *src, const int8_t *predicted);
+extern size_t vec_u8v32n_ess(size_t size, const uint8_t *src, const uint8_t *predicted);
+extern uint16_t vec_u8v32n_ess_u16(size_t size, const uint8_t *src, const uint8_t *predicted);
+extern uint32_t vec_u8v32n_ess_u32(size_t size, const uint8_t *src, const uint8_t *predicted);
+
 
 /* sorted arrays */
 
@@ -118,9 +190,9 @@ extern int  vec_i8v32n_is_sorted(size_t size, const int8_t *src);
 
 /* assignment */
 
-extern void vec_i32v8n_set_seq(size_t size, const int32_t *src, int32_t start, int32_t diff);
-extern void vec_i16v16n_set_seq(size_t size, const int16_t *src, int16_t start, int16_t diff);
-extern void vec_i8v32n_set_seq(size_t size, const int8_t *src, int8_t start, int8_t diff);
+extern void vec_i32v8n_set_seq(size_t size, int32_t *dst, int32_t start, int32_t diff);
+extern void vec_i16v16n_set_seq(size_t size, int16_t *dst, int16_t start, int16_t diff);
+extern void vec_i8v32n_set_seq(size_t size, int8_t *dst, int8_t start, int8_t diff);
 
 /* search */
 

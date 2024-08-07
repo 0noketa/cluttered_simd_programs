@@ -23,7 +23,7 @@ int32_t vec_i32v8n_get_max(size_t size, const int32_t *src);
 void vec_i32v8n_get_minmax(size_t size, const int32_t *src, int32_t *out_min, int32_t *out_max);
 
 
-int16_t vec_i16v16n_get_min_index_i16(size_t size, const int16_t *src)
+static void vec_i16v16n_get_min_and_index_i16_i(size_t size, const int16_t *src, int16_t *out_min, int16_t *out_idx)
 {
     size_t units = size / 8;
     const __m128i *p = (const __m128i*)src;
@@ -82,7 +82,23 @@ int16_t vec_i16v16n_get_min_index_i16(size_t size, const int16_t *src)
     int16_t hi = (results >> 16) & 0xFFFF;
     int16_t hi_idx = (results_idx >> 16) & 0xFFFF;
 
-    return lo < hi ? lo_idx : hi_idx;
+    if (lo < hi)
+    {
+        *out_min = lo;
+        *out_idx = lo_idx;
+    }
+    else
+    {
+        *out_min = hi;
+        *out_idx = hi_idx;
+    }
+}
+int16_t vec_i16v16n_get_min_index_i16(size_t size, const int16_t *src)
+{
+    int16_t val;
+    int16_t result;
+    vec_i16v16n_get_min_and_index_i16_i(size, src, &result, &val);
+    return result;
 }
 size_t vec_i16v16n_get_min_index(size_t size, const int16_t *src)
 {
@@ -93,8 +109,9 @@ size_t vec_i16v16n_get_min_index(size_t size, const int16_t *src)
 
     for (int i = 0; i < units; ++i)
     {
-        int16_t idx = vec_i16v16n_get_min_index_i16(BLOCK_SIZE, src + i * BLOCK_SIZE);
-        int16_t it = src[idx];
+        int16_t it;
+        int16_t idx;
+        vec_i16v16n_get_min_and_index_i16_i(BLOCK_SIZE, src + i * BLOCK_SIZE, &it, &idx);
 
         if (it < current_min)
         {
@@ -106,7 +123,7 @@ size_t vec_i16v16n_get_min_index(size_t size, const int16_t *src)
     return current_min_index;
 }
 
-int16_t vec_i16v16n_get_max_index_i16(size_t size, const int16_t *src)
+static void vec_i16v16n_get_max_and_index_i16_i(size_t size, const int16_t *src, int16_t *out_max, int16_t *out_idx)
 {
     size_t units = size / 8;
     const __m128i *p = (const __m128i*)src;
@@ -165,7 +182,23 @@ int16_t vec_i16v16n_get_max_index_i16(size_t size, const int16_t *src)
     int16_t hi = (results >> 16) & 0xFFFF;
     int16_t hi_idx = (results_idx >> 16) & 0xFFFF;
 
-    return lo > hi ? lo_idx : hi_idx;
+    if (lo > hi)
+    {
+        *out_max = lo;
+        *out_idx = lo_idx;
+    }
+    else
+    {
+        *out_max = hi;
+        *out_idx = hi_idx;
+    }
+}
+int16_t vec_i16v16n_get_max_index_i16(size_t size, const int16_t *src)
+{
+    int16_t val;
+    int16_t result;
+    vec_i16v16n_get_max_and_index_i16_i(size, src, &result, &val);
+    return result;
 }
 size_t vec_i16v16n_get_max_index(size_t size, const int16_t *src)
 {
@@ -176,8 +209,9 @@ size_t vec_i16v16n_get_max_index(size_t size, const int16_t *src)
 
     for (int i = 0; i < units; ++i)
     {
-        int16_t idx = vec_i16v16n_get_max_index_i16(BLOCK_SIZE, src + i * BLOCK_SIZE);
-        int16_t it = src[idx];
+        int16_t it;
+        int16_t idx;
+        vec_i16v16n_get_max_and_index_i16_i(BLOCK_SIZE, src + i * BLOCK_SIZE, &it, &idx);
 
         if (it > current_max)
         {
