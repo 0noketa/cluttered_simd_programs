@@ -20,10 +20,10 @@ int main()
         data[max0_idx] = max0;
 
 
-        size_t min_idx = vec_i16v16n_get_min_index(DATA_SIZE, data);
-        int16_t min = vec_i16v16n_get_min(DATA_SIZE, data);
-        size_t max_idx = vec_i16v16n_get_max_index(DATA_SIZE, data);
-        int16_t max = vec_i16v16n_get_max(DATA_SIZE, data);
+        size_t min_idx = vec_i16x16n_get_min_index(DATA_SIZE, data);
+        int16_t min = vec_i16x16n_get_min(DATA_SIZE, data);
+        size_t max_idx = vec_i16x16n_get_max_index(DATA_SIZE, data);
+        int16_t max = vec_i16x16n_get_max(DATA_SIZE, data);
 
         if (min0 != min || min0_idx != min_idx
                 || max0 != max || max0_idx != max_idx)

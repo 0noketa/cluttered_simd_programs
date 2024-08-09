@@ -280,7 +280,7 @@ size_t vec_u256n_get_hamming_distance(size_t size, const uint8_t *src1, const ui
 
 /* sum */
 
-int32_t vec_i32v8n_sum_i32(size_t size, const int32_t *src)
+int32_t vec_i32x8n_sum_i32(size_t size, const int32_t *src)
 {
 	size_t units = size / 2 / 4;
 	const int32x2_t *p = (const int32x2_t*)src;
@@ -309,9 +309,9 @@ int32_t vec_i32v8n_sum_i32(size_t size, const int32_t *src)
 uint32_t vec_u32v8n_sum_u32(size_t size, const uint32_t *src)
 ;
 
-int16_t vec_i16v16n_sum_i16(size_t size, const int16_t *src)
+int16_t vec_i16x16n_sum_i16(size_t size, const int16_t *src)
 ;
-size_t vec_i16v16n_sum(size_t size, const int16_t *src)
+size_t vec_i16x16n_sum(size_t size, const int16_t *src)
 ;
 uint16_t vec_u16v16n_sum_u16(size_t size, const uint16_t *src)
 ;
@@ -319,7 +319,7 @@ size_t vec_u16v16n_sum(size_t size, const uint16_t *src)
 ;
 
 // returns i8x8
-static int16x4_t vec_i8v32n_sum_i8x8(size_t size, const int8_t *src)
+static int16x4_t vec_i8x32n_sum_i8x8(size_t size, const int8_t *src)
 {
     size_t units = size / 16;
     const int8x8_t *p = (const int8x8_t*)src;
@@ -340,16 +340,16 @@ static int16x4_t vec_i8v32n_sum_i8x8(size_t size, const int8_t *src)
     return vadd_i8(results, results2);
 }
 
-int8_t vec_i8v32n_sum_i8(size_t size, const int8_t *src)
+int8_t vec_i8x32n_sum_i8(size_t size, const int8_t *src)
 {
-    int8x8_t results = vec_i8v32n_sum_u8x8(size, src);
+    int8x8_t results = vec_i8x32n_sum_u8x8(size, src);
     results = vadd_i8(results, vreinterpret_i8_u64(vshr_n_u64(vreinterpret_u64_i8(results), 16)));
     results = vadd_i8(results, vreinterpret_i8_u64(vshr_n_u64(vreinterpret_u64_i8(results), 32)));
     int8_t result = vget_lane_v8(results, 0);
 
     return result;
 }
-size_t vec_i8v32n_sum(size_t size, const int8_t *src)
+size_t vec_i8x32n_sum(size_t size, const int8_t *src)
 ;
 
 // returns i16x4
@@ -398,7 +398,7 @@ size_t vec_u8v32n_sum(size_t size, const uint8_t *src)
 
     for (int i = 0; i < units; ++i)
     {
-        uint32x2_t results = vreinterpret_u32_u16(vec_i8v32n_sum_u16x4(unit_size, src + i * unit_size));
+        uint32x2_t results = vreinterpret_u32_u16(vec_i8x32n_sum_u16x4(unit_size, src + i * unit_size));
         const uint32x2_t mask_lower = vld1_dup_u32(0x0000FFFF);
         uint32x2_t results2 = _mm_srli_si32(results, 16);
         results = vand_u32(results, mask_lower);
@@ -416,7 +416,7 @@ size_t vec_u8v32n_sum(size_t size, const uint8_t *src)
 
     if (size2 != 0)
     {
-        uint32x2_t results = vreinterpret_u32_u16(vec_i8v32n_sum_u16x4(size2, src + base));
+        uint32x2_t results = vreinterpret_u32_u16(vec_i8x32n_sum_u16x4(size2, src + base));
         const uint32x2_t mask_lower = vld1_dup_u32(0x0000FFFF);
         uint32x2_t results2 = _mm_srli_si32(results, 16);
         results = vand_u32(results, mask_lower);
@@ -433,6 +433,6 @@ size_t vec_u8v32n_sum(size_t size, const uint8_t *src)
 
 /* assignment */
 
-void vec_i32v8n_set_seq(size_t size, const int32_t *src, int32_t start, int32_t diff)
+void vec_i32x8n_set_seq(size_t size, const int32_t *src, int32_t start, int32_t diff)
 ;
 

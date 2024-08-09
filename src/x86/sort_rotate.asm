@@ -1,15 +1,15 @@
 
 section .text
 
-global vec_i32v8n_inplace_reverse
-global vec_i32v8n_reverse
-global vec_i16v16n_inplace_reverse
-global vec_i16v16n_reverse
-global vec_i8v32n_inplace_reverse
-global vec_i8v32n_reverse
+global vec_i32x8n_inplace_reverse
+global vec_i32x8n_reverse
+global vec_i16x16n_inplace_reverse
+global vec_i16x16n_reverse
+global vec_i8x32n_inplace_reverse
+global vec_i8x32n_reverse
 
 
-vec_i32v8n_inplace_reverse:
+vec_i32x8n_inplace_reverse:
     push ecx
     push esi
     push edi
@@ -45,7 +45,7 @@ vec_i32v8n_inplace_reverse:
     pop ecx
     ret
 
-vec_i32v8n_reverse:
+vec_i32x8n_reverse:
     push ecx
     push esi
     push edi
@@ -81,7 +81,7 @@ vec_i32v8n_reverse:
     pop ecx
     ret
 
-vec_i16v16n_inplace_reverse:
+vec_i16x16n_inplace_reverse:
     push ecx
     push esi
     push edi
@@ -119,7 +119,7 @@ vec_i16v16n_inplace_reverse:
     pop ecx
     ret
 
-vec_i16v16n_reverse:
+vec_i16x16n_reverse:
     push ecx
     push esi
     push edi
@@ -158,7 +158,7 @@ vec_i16v16n_reverse:
     ret
 
 
-vec_i8v32n_inplace_reverse:
+vec_i8x32n_inplace_reverse:
     push ecx
     push esi
     push edi
@@ -198,7 +198,7 @@ vec_i8v32n_inplace_reverse:
     pop ecx
     ret
 
-vec_i8v32n_reverse:
+vec_i8x32n_reverse:
     push ecx
     push esi
     push edi

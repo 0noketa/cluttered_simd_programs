@@ -12,7 +12,7 @@ int main()
     {
         int16_t r0;
         int16_t r1;
-        vec_i16v16n_get_minmax(DATA16_SIZE, data16, &r0, &r1);
+        vec_i16x16n_get_minmax(DATA16_SIZE, data16, &r0, &r1);
 
         printf("%d .. %d\n", (int)r0, (int)r1);
 

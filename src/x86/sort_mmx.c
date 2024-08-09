@@ -16,14 +16,14 @@
 
 /* reverse */
 
-void vec_i32v8n_inplace_reverse(size_t size, int32_t *data)
+void vec_i32x8n_inplace_reverse(size_t size, int32_t *data)
 ;
 
-void vec_i32v8n_reverse(size_t size, const int32_t *src, int32_t *dst)
+void vec_i32x8n_reverse(size_t size, const int32_t *src, int32_t *dst)
 {
-	vec_i32v4n_reverse(size & ~7, src, dst);
+	vec_i32x4n_reverse(size & ~7, src, dst);
 }
-static void vec_i32v4n_reverse_i(size_t size, const int32_t *src, int32_t *dst)
+static void vec_i32x4n_reverse_i(size_t size, const int32_t *src, int32_t *dst)
 {
 	size_t units = size / 2;
 	const __m64 *p = (const __m64*)src;
@@ -51,18 +51,18 @@ static void vec_i32v4n_reverse_i(size_t size, const int32_t *src, int32_t *dst)
 		q[units - 1 - i * 2] = left;
 	}
 }
-void vec_i32v4n_reverse(size_t size, const int32_t *src, int32_t *dst)
+void vec_i32x4n_reverse(size_t size, const int32_t *src, int32_t *dst)
 {
-	vec_i32v4n_reverse_i(size, src, dst);
+	vec_i32x4n_reverse_i(size, src, dst);
 	ANY_EMMS();
 }
-void vec_i32v2n_reverse(size_t size, const int32_t *src, int32_t *dst)
+void vec_i32x2n_reverse(size_t size, const int32_t *src, int32_t *dst)
 {
 	size_t units = size / 2;
 	const __m64 *p = (const __m64*)src;
 	__m64 *q = (__m64*)dst;
 
-	vec_i32v4n_reverse(size, src, dst);
+	vec_i32x4n_reverse(size, src, dst);
 
 	if (units & 1)
 	{
@@ -83,11 +83,11 @@ void vec_i32v2n_reverse(size_t size, const int32_t *src, int32_t *dst)
 	ANY_EMMS();
 }
 // current version is slow as generic version is.
-void vec_i16v16n_reverse(size_t size, const int16_t *src, int16_t *dst)
+void vec_i16x16n_reverse(size_t size, const int16_t *src, int16_t *dst)
 {
-	vec_i16v8n_reverse(size & ~16, src, dst);
+	vec_i16x8n_reverse(size & ~16, src, dst);
 }
-static void vec_i16v8n_reverse_i(size_t size, const int16_t *src, int16_t *dst)
+static void vec_i16x8n_reverse_i(size_t size, const int16_t *src, int16_t *dst)
 {
 	size_t units = size / 4;
 	const __m64 *p = (const __m64*)src;
@@ -126,18 +126,18 @@ static void vec_i16v8n_reverse_i(size_t size, const int16_t *src, int16_t *dst)
 		q[units - 1 - i * 2] = left;
 	}
 }
-void vec_i16v8n_reverse(size_t size, const int16_t *src, int16_t *dst)
+void vec_i16x8n_reverse(size_t size, const int16_t *src, int16_t *dst)
 {
-	vec_i16v8n_reverse_i(size, src, dst);
+	vec_i16x8n_reverse_i(size, src, dst);
 	ANY_EMMS();
 }
-void vec_i16v4n_reverse(size_t size, const int16_t *src, int16_t *dst)
+void vec_i16x4n_reverse(size_t size, const int16_t *src, int16_t *dst)
 {
 	size_t units = size / 4;
 	const __m64 *p = (const __m64*)src;
 	__m64 *q = (__m64*)dst;
 
-	vec_i16v8n_reverse(size, src, dst);
+	vec_i16x8n_reverse(size, src, dst);
 
 	if (units & 1)
 	{
@@ -162,11 +162,11 @@ void vec_i16v4n_reverse(size_t size, const int16_t *src, int16_t *dst)
 
 	ANY_EMMS();
 }
-void vec_i8v32n_inplace_reverse(size_t size, int8_t *data)
+void vec_i8x32n_inplace_reverse(size_t size, int8_t *data)
 {
-	vec_i8v16n_inplace_reverse(size & ~31, data);
+	vec_i8x16n_inplace_reverse(size & ~31, data);
 }
-static void vec_i8v16n_inplace_reverse_i(size_t size, int8_t *data)
+static void vec_i8x16n_inplace_reverse_i(size_t size, int8_t *data)
 {
 	size_t units = size / 8;
 	__m64 *p = (__m64*)data;
@@ -212,17 +212,17 @@ static void vec_i8v16n_inplace_reverse_i(size_t size, int8_t *data)
 		p[units - 1 - i] = left;
 	}
 }
-void vec_i8v16n_inplace_reverse(size_t size, int8_t *data)
+void vec_i8x16n_inplace_reverse(size_t size, int8_t *data)
 {
-	vec_i8v16n_inplace_reverse_i(size, data);
+	vec_i8x16n_inplace_reverse_i(size, data);
 	ANY_EMMS();
 }
-void vec_i8v8n_inplace_reverse(size_t size, int8_t *data)
+void vec_i8x8n_inplace_reverse(size_t size, int8_t *data)
 {
 	size_t units = size / 8;
 	__m64 *p = (__m64*)data;
 
-	vec_i8v16n_inplace_reverse_i(size, data);
+	vec_i8x16n_inplace_reverse_i(size, data);
 
 	if (units & 1)
 	{
@@ -252,11 +252,11 @@ void vec_i8v8n_inplace_reverse(size_t size, int8_t *data)
 
 	ANY_EMMS();
 }
-void vec_i8v32n_reverse(size_t size, const int8_t *src, int8_t *dst)
+void vec_i8x32n_reverse(size_t size, const int8_t *src, int8_t *dst)
 {
-	vec_i8v16n_reverse(size & ~31, src,dst);
+	vec_i8x16n_reverse(size & ~31, src,dst);
 }
-static void vec_i8v16n_reverse_i(size_t size, const int8_t *src, int8_t *dst)
+static void vec_i8x16n_reverse_i(size_t size, const int8_t *src, int8_t *dst)
 {
 	size_t units = size / 8;
 	const __m64 *p = (const __m64*)src;
@@ -303,18 +303,18 @@ static void vec_i8v16n_reverse_i(size_t size, const int8_t *src, int8_t *dst)
 		q[units - 1 - i * 2] = left;
 	}
 }
-void vec_i8v16n_reverse(size_t size, const int8_t *src, int8_t *dst)
+void vec_i8x16n_reverse(size_t size, const int8_t *src, int8_t *dst)
 {
-	vec_i8v16n_reverse_i(size, src, dst);
+	vec_i8x16n_reverse_i(size, src, dst);
 	ANY_EMMS();
 }
-void vec_i8v8n_reverse(size_t size, const int8_t *src, int8_t *dst)
+void vec_i8x8n_reverse(size_t size, const int8_t *src, int8_t *dst)
 {
 	size_t units = size / 8;
 	const __m64 *p = (const __m64*)src;
 	__m64 *q = (__m64*)dst;
 
-	vec_i8v16n_reverse_i(size, src, dst);
+	vec_i8x16n_reverse_i(size, src, dst);
 
 	if (units & 1)
 	{
@@ -530,9 +530,9 @@ void bits256n_ror32(size_t size, const uint8_t *src, uint8_t *dst)
 
 /* ascendant/descendant */
 
-void  vec_i32v8n_get_sorted_index(size_t size, const int32_t *src, int32_t element, int32_t *out_start, int32_t *out_end);
+void  vec_i32x8n_get_sorted_index(size_t size, const int32_t *src, int32_t element, int32_t *out_start, int32_t *out_end);
 ;
-void  vec_i16v16n_get_sorted_index(size_t size, const int16_t *src, int16_t element, int16_t *out_start, int16_t *out_end)
+void  vec_i16x16n_get_sorted_index(size_t size, const int16_t *src, int16_t element, int16_t *out_start, int16_t *out_end)
 {
 	size_t units = size / 4;
 	const __m64 *p = (const __m64*)src;
@@ -569,17 +569,17 @@ void  vec_i16v16n_get_sorted_index(size_t size, const int16_t *src, int16_t elem
 
 	ANY_EMMS();
 }
-void  vec_i8v32n_get_sorted_index(size_t size, const int8_t *src, int8_t element, int8_t *out_start, int8_t *out_end);
+void  vec_i8x32n_get_sorted_index(size_t size, const int8_t *src, int8_t element, int8_t *out_start, int8_t *out_end);
 ;
 
-int  vec_i32v8n_is_sorted_a(size_t size, const int32_t *src)
+int  vec_i32x8n_is_sorted_a(size_t size, const int32_t *src)
 ;
-int  vec_i32v8n_is_sorted_d(size_t size, const int32_t *src)
+int  vec_i32x8n_is_sorted_d(size_t size, const int32_t *src)
 ;
-int  vec_i32v8n_is_sorted(size_t size, const int32_t *src)
+int  vec_i32x8n_is_sorted(size_t size, const int32_t *src)
 ;
 
-int  vec_i16v16n_is_sorted_a(size_t size, const int16_t *src)
+int  vec_i16x16n_is_sorted_a(size_t size, const int16_t *src)
 {
     size_t units = size / 4;
     const __m64 *p = (const __m64*)src;
@@ -612,7 +612,7 @@ int  vec_i16v16n_is_sorted_a(size_t size, const int16_t *src)
     ANY_EMMS();
     return !!result;
 }
-int  vec_i16v16n_is_sorted_d(size_t size, const int16_t *src)
+int  vec_i16x16n_is_sorted_d(size_t size, const int16_t *src)
 {
     size_t units = size / 4;
     const __m64 *p = (const __m64*)src;
@@ -645,7 +645,7 @@ int  vec_i16v16n_is_sorted_d(size_t size, const int16_t *src)
     ANY_EMMS();
     return !!result;
 }
-int  vec_i16v16n_is_sorted(size_t size, const int16_t *src)
+int  vec_i16x16n_is_sorted(size_t size, const int16_t *src)
 {
     size_t units = size / 4;
     const __m64 *p = (const __m64*)src;
@@ -691,9 +691,9 @@ int  vec_i16v16n_is_sorted(size_t size, const int16_t *src)
     return result_a || result_d;
 }
 
-int  vec_i8v32n_is_sorted_a(size_t size, const int8_t *src)
+int  vec_i8x32n_is_sorted_a(size_t size, const int8_t *src)
 ;
-int  vec_i8v32n_is_sorted_d(size_t size, const int8_t *src)
+int  vec_i8x32n_is_sorted_d(size_t size, const int8_t *src)
 ;
-int  vec_i8v32n_is_sorted(size_t size, const int8_t *src)
+int  vec_i8x32n_is_sorted(size_t size, const int8_t *src)
 ;

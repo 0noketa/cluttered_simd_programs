@@ -105,31 +105,31 @@ cdef class Int8Array(Int8ArrayBase):
 
     def reversed(self):
         cdef Int8Array dst = Int8Array(size=self.len_)
-        vec_i8v32n_reverse(self.len_, self.arr_, dst.arr_)
+        vec_i8x32n_reverse(self.len_, self.arr_, dst.arr_)
 
         return dst
 
     def min(self):
-        cdef int8_t dst = vec_i8v32n_get_min(self.len_, self.arr_)
+        cdef int8_t dst = vec_i8x32n_get_min(self.len_, self.arr_)
 
         return dst
 
     def max(self):
-        cdef int8_t dst = vec_i8v32n_get_max(self.len_, self.arr_)
+        cdef int8_t dst = vec_i8x32n_get_max(self.len_, self.arr_)
 
         return dst
 
     def minmax(self):
         cdef int8_t min
         cdef int8_t max
-        vec_i8v32n_get_minmax(self.len_, self.arr_, &min, &max)
+        vec_i8x32n_get_minmax(self.len_, self.arr_, &min, &max)
 
         return (min, max)
 
     def get_sorted_indices_i8(self, int8_t value):
         cdef int8_t start
         cdef int8_t end
-        vec_i8v32n_get_sorted_index(self.len_, self.arr_, value, &start, &end)
+        vec_i8x32n_get_sorted_index(self.len_, self.arr_, value, &start, &end)
 
         return range(start, end)
     

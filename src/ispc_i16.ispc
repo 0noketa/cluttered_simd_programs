@@ -49,7 +49,7 @@ uniform int16 reduce_range(uniform int16 src[], uniform target_size_t offsetBase
 #if TARGET_WIDTH > 16
 #error "lager than 256bit SIMD is not supported"
 #endif
-export uniform int16 vec_i16v16n_get_min(uniform target_size_t size, uniform int16 src[])
+export uniform int16 vec_i16x16n_get_min(uniform target_size_t size, uniform int16 src[])
 {
     uniform target_size_t units = size / TARGET_WIDTH;
     uniform target_size_t vec_size = units * TARGET_WIDTH;
@@ -75,7 +75,7 @@ export uniform int16 vec_i16v16n_get_min(uniform target_size_t size, uniform int
     return result;
 }
 
-export uniform int16 vec_i16v16n_get_max(uniform target_size_t size, uniform int16 src[])
+export uniform int16 vec_i16x16n_get_max(uniform target_size_t size, uniform int16 src[])
 {
     uniform target_size_t units = size / TARGET_WIDTH;
     uniform target_size_t vec_size = units * TARGET_WIDTH;
@@ -101,7 +101,7 @@ export uniform int16 vec_i16v16n_get_max(uniform target_size_t size, uniform int
     return result;
 }
 
-export void vec_i16v16n_get_minmax(uniform target_size_t size, uniform int16 src[], uniform int16 out_min[], uniform int16 out_max[])
+export void vec_i16x16n_get_minmax(uniform target_size_t size, uniform int16 src[], uniform int16 out_min[], uniform int16 out_max[])
 {
     uniform target_size_t units = size / TARGET_WIDTH;
     uniform target_size_t vec_size = units * TARGET_WIDTH;
@@ -134,19 +134,19 @@ export void vec_i16v16n_get_minmax(uniform target_size_t size, uniform int16 src
 
 
 // get width of min ... max
-export uniform int16 vec_i16v16n_get_range(uniform target_size_t size, uniform int16 src[])
+export uniform int16 vec_i16x16n_get_range(uniform target_size_t size, uniform int16 src[])
 {
     uniform int16 min_result;
     uniform int16 max_result;
 
-    vec_i16v16n_get_minmax(size, src, &min_result, &max_result);
+    vec_i16x16n_get_minmax(size, src, &min_result, &max_result);
 
     return max_result - min_result;
 }
 
 // generates longer code
-export uniform int16 vec_i16v16n_get_range_2(uniform target_size_t size, uniform int16 src[])
+export uniform int16 vec_i16x16n_get_range_2(uniform target_size_t size, uniform int16 src[])
 {
-    return vec_i16v16n_get_max(size, src) - vec_i16v16n_get_min(size, src);
+    return vec_i16x16n_get_max(size, src) - vec_i16x16n_get_min(size, src);
 }
 

@@ -41,7 +41,7 @@ static void dump8(const char *s, int8x8_t current)
 
 
 
-void vec_i32v8n_reverse(size_t size, const int32_t *src, int32_t *dst)
+void vec_i32x8n_reverse(size_t size, const int32_t *src, int32_t *dst)
 {
 	size_t units = size / 2;
 	size_t units2 = units / 2;
@@ -78,7 +78,7 @@ void vec_i32v8n_reverse(size_t size, const int32_t *src, int32_t *dst)
 	}
 }
 // current version is slow as generic version is.
-void vec_i16v16n_reverse(size_t size, const int16_t *src, int16_t *dst)
+void vec_i16x16n_reverse(size_t size, const int16_t *src, int16_t *dst)
 {
 	size_t units = size / 4;
 	size_t units2 = units / 2;
@@ -127,7 +127,7 @@ void vec_i16v16n_reverse(size_t size, const int16_t *src, int16_t *dst)
 		q[units2] = it;
 	}
 }
-void vec_i8v32n_reverse(size_t size, const int8_t *src, int8_t *dst)
+void vec_i8x32n_reverse(size_t size, const int8_t *src, int8_t *dst)
 {
 	size_t units = size / 8;
 	size_t units2 = units / 2;

@@ -28,7 +28,7 @@ int main()
     // for (int i = 0; i < UINT8_MAX/4; ++i)
     for (int i = 0; i < 1; ++i)
     {
-        vec_i8v32n_reverse(DATA_SIZE, src, dst);
+        vec_i8x32n_reverse(DATA_SIZE, src, dst);
 
 		for (int j = 0; j < DATA_SIZE; ++j)
 		{
@@ -46,7 +46,7 @@ int main()
             }
 		}
 
-        vec_i8v32n_inplace_reverse(DATA_SIZE, dst);
+        vec_i8x32n_inplace_reverse(DATA_SIZE, dst);
 
 		for (int j = 0; j < DATA_SIZE; ++j)
 		{

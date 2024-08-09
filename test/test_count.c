@@ -18,7 +18,7 @@ int main()
             result0 += (data16[j] == it);
         }
 
-        size_t result = vec_i16v16n_count(DATA16_SIZE, data16, it);
+        size_t result = vec_i16x16n_count(DATA16_SIZE, data16, it);
 
         if (result != result0)
 		{

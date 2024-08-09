@@ -18,7 +18,7 @@ int main()
             result0 += (data8[j] == it);
         }
 
-        size_t result = vec_i8v32n_count(DATA8_SIZE, data8, it);
+        size_t result = vec_i8x32n_count(DATA8_SIZE, data8, it);
 
         if (result != result0)
 		{

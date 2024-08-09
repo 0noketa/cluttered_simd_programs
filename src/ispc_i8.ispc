@@ -76,7 +76,7 @@ uniform int8 reduce_range(uniform int8 src[], uniform target_size_t offsetBase)
 #if TARGET_WIDTH > 32
 #error "lager than 256bit SIMD is not supported"
 #endif
-export uniform int8 vec_i8v32n_get_min(uniform target_size_t size, uniform uint16 src[])
+export uniform int8 vec_i8x32n_get_min(uniform target_size_t size, uniform uint16 src[])
 {
     size /= 2;
     uniform target_size_t units = size / TARGET_WIDTH;
@@ -109,7 +109,7 @@ export uniform int8 vec_i8v32n_get_min(uniform target_size_t size, uniform uint1
     return result;
 }
 
-export uniform int8 vec_i8v32n_get_max(uniform target_size_t size, uniform uint16 src[])
+export uniform int8 vec_i8x32n_get_max(uniform target_size_t size, uniform uint16 src[])
 {
     size /= 2;
     uniform target_size_t units = size / TARGET_WIDTH;
@@ -142,7 +142,7 @@ export uniform int8 vec_i8v32n_get_max(uniform target_size_t size, uniform uint1
     return result;
 }
 
-export void vec_i8v32n_get_minmax(uniform target_size_t size, uniform uint16 src[], uniform int8 out_min[], uniform int8 out_max[])
+export void vec_i8x32n_get_minmax(uniform target_size_t size, uniform uint16 src[], uniform int8 out_min[], uniform int8 out_max[])
 {
     size /= 2;
     uniform target_size_t units = size / TARGET_WIDTH;
@@ -184,19 +184,19 @@ export void vec_i8v32n_get_minmax(uniform target_size_t size, uniform uint16 src
 
 
 // get width of min ... max
-export uniform int8 vec_i8v32n_get_range(uniform target_size_t size, uniform uint16 src[])
+export uniform int8 vec_i8x32n_get_range(uniform target_size_t size, uniform uint16 src[])
 {
     uniform int8 min_result;
     uniform int8 max_result;
 
-    vec_i8v32n_get_minmax(size, src, &min_result, &max_result);
+    vec_i8x32n_get_minmax(size, src, &min_result, &max_result);
 
     return max_result - min_result;
 }
 
 // generates longer code
-export uniform int8 vec_i8v32n_get_range_2(uniform target_size_t size, uniform uint16 src[])
+export uniform int8 vec_i8x32n_get_range_2(uniform target_size_t size, uniform uint16 src[])
 {
-    return vec_i8v32n_get_max(size, src) - vec_i8v32n_get_min(size, src);
+    return vec_i8x32n_get_max(size, src) - vec_i8x32n_get_min(size, src);
 }
 

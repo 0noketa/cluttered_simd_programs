@@ -34,16 +34,16 @@ static void dump_u8(const char *s, __m64 current)
 
 /* min/max */
 
-size_t vec_i32v8n_get_min_index(size_t size, const int32_t *src);
-size_t vec_i32v8n_get_max_index(size_t size, const int32_t *src);
-void vec_i32v8n_get_minmax_index(size_t size, const int32_t *src, size_t *out_min, size_t *out_max);
-int32_t vec_i32v8n_get_min(size_t size, const int32_t *src)
+size_t vec_i32x8n_get_min_index(size_t size, const int32_t *src);
+size_t vec_i32x8n_get_max_index(size_t size, const int32_t *src);
+void vec_i32x8n_get_minmax_index(size_t size, const int32_t *src, size_t *out_min, size_t *out_max);
+int32_t vec_i32x8n_get_min(size_t size, const int32_t *src)
 ;
-int32_t vec_i32v8n_get_max(size_t size, const int32_t *src);
-void vec_i32v8n_get_minmax(size_t size, const int32_t *src, int32_t *out_min, int32_t *out_max);
+int32_t vec_i32x8n_get_max(size_t size, const int32_t *src);
+void vec_i32x8n_get_minmax(size_t size, const int32_t *src, int32_t *out_min, int32_t *out_max);
 
 
-static void vec_i16v16n_get_min_and_index_i16_i(size_t size, const int16_t *src, int16_t *out_min, int16_t *out_idx)
+static void vec_i16x16n_get_min_and_index_i16_i(size_t size, const int16_t *src, int16_t *out_min, int16_t *out_idx)
 {
     size_t units = size / 4;
     const __m64 *p = (const __m64*)src;
@@ -110,15 +110,15 @@ static void vec_i16v16n_get_min_and_index_i16_i(size_t size, const int16_t *src,
         *out_idx = hi_idx;
     }
 }
-int16_t vec_i16v16n_get_min_index_i16(size_t size, const int16_t *src)
+int16_t vec_i16x16n_get_min_index_i16(size_t size, const int16_t *src)
 {
     int16_t val;
     int16_t result;
-    vec_i16v16n_get_min_and_index_i16_i(size, src, &result, &val);
+    vec_i16x16n_get_min_and_index_i16_i(size, src, &result, &val);
     ANY_EMMS();
     return result;
 }
-size_t vec_i16v16n_get_min_index(size_t size, const int16_t *src)
+size_t vec_i16x16n_get_min_index(size_t size, const int16_t *src)
 {
     const size_t BLOCK_SIZE = 0x4000;
     size_t units = size / BLOCK_SIZE;
@@ -129,7 +129,7 @@ size_t vec_i16v16n_get_min_index(size_t size, const int16_t *src)
     {
         int16_t it;
         int16_t idx;
-        vec_i16v16n_get_min_and_index_i16_i(BLOCK_SIZE, src + i * BLOCK_SIZE, &it, &idx);
+        vec_i16x16n_get_min_and_index_i16_i(BLOCK_SIZE, src + i * BLOCK_SIZE, &it, &idx);
 
         if (it < current_min)
         {
@@ -142,7 +142,7 @@ size_t vec_i16v16n_get_min_index(size_t size, const int16_t *src)
     return current_min_index;
 }
 
-static void vec_i16v16n_get_max_and_index_i16_i(size_t size, const int16_t *src, int16_t *out_max, int16_t *out_idx)
+static void vec_i16x16n_get_max_and_index_i16_i(size_t size, const int16_t *src, int16_t *out_max, int16_t *out_idx)
 {
     size_t units = size / 4;
     const __m64 *p = (const __m64*)src;
@@ -209,15 +209,15 @@ static void vec_i16v16n_get_max_and_index_i16_i(size_t size, const int16_t *src,
         *out_idx = hi_idx;
     }
 }
-int16_t vec_i16v16n_get_max_index_i16(size_t size, const int16_t *src)
+int16_t vec_i16x16n_get_max_index_i16(size_t size, const int16_t *src)
 {
     int16_t val;
     int16_t result;
-    vec_i16v16n_get_max_and_index_i16_i(size, src, &result, &val);
+    vec_i16x16n_get_max_and_index_i16_i(size, src, &result, &val);
     ANY_EMMS();
     return result;
 }
-size_t vec_i16v16n_get_max_index(size_t size, const int16_t *src)
+size_t vec_i16x16n_get_max_index(size_t size, const int16_t *src)
 {
     const size_t BLOCK_SIZE = 0x4000;
     size_t units = size / BLOCK_SIZE;
@@ -228,7 +228,7 @@ size_t vec_i16v16n_get_max_index(size_t size, const int16_t *src)
     {
         int16_t it;
         int16_t idx;
-        vec_i16v16n_get_max_and_index_i16_i(BLOCK_SIZE, src + i * BLOCK_SIZE, &it, &idx);
+        vec_i16x16n_get_max_and_index_i16_i(BLOCK_SIZE, src + i * BLOCK_SIZE, &it, &idx);
 
         if (it > current_max)
         {
@@ -240,10 +240,10 @@ size_t vec_i16v16n_get_max_index(size_t size, const int16_t *src)
     ANY_EMMS();
     return current_max_index;
 }
-void vec_i16v16n_get_minmax_index(size_t size, const int16_t *src, size_t *out_min, size_t *out_max)
+void vec_i16x16n_get_minmax_index(size_t size, const int16_t *src, size_t *out_min, size_t *out_max)
 ;
 
-int16_t vec_i16v16n_get_min(size_t size, const int16_t *src)
+int16_t vec_i16x16n_get_min(size_t size, const int16_t *src)
 {
     size_t units = size / 4;
     const __m64 *p = (const __m64*)src;
@@ -295,7 +295,7 @@ int16_t vec_i16v16n_get_min(size_t size, const int16_t *src)
     return result;
 }
 
-int16_t vec_i16v16n_get_max(size_t size, const int16_t *src)
+int16_t vec_i16x16n_get_max(size_t size, const int16_t *src)
 {
     size_t units = size / 4;
     const __m64 *p = (const __m64*)src;
@@ -341,7 +341,7 @@ int16_t vec_i16v16n_get_max(size_t size, const int16_t *src)
     return result;
 }
 
-void vec_i16v16n_get_minmax(size_t size, const int16_t *src, int16_t *out_min, int16_t *out_max)
+void vec_i16x16n_get_minmax(size_t size, const int16_t *src, int16_t *out_min, int16_t *out_max)
 {
     size_t units = size / 4;
     const __m64 *p = (const __m64*)src;
@@ -430,7 +430,7 @@ void vec_i16v16n_get_minmax(size_t size, const int16_t *src, int16_t *out_min, i
 }
 
 
-int8_t vec_i8v32n_get_min_index_i8(size_t size, const int8_t *src)
+int8_t vec_i8x32n_get_min_index_i8(size_t size, const int8_t *src)
 {
     size_t units = size / 8;
     const __m64 *p = (const __m64*)src;
@@ -510,17 +510,17 @@ int8_t vec_i8v32n_get_min_index_i8(size_t size, const int8_t *src)
     ANY_EMMS();
     return lo < lo_idx ? lo_idx : hi_idx;
 }
-size_t vec_i8v32n_get_min_index(size_t size, const int8_t *src)
+size_t vec_i8x32n_get_min_index(size_t size, const int8_t *src)
 ;
-int8_t vec_i8v32n_get_max_index_i8(size_t size, const int8_t *src)
+int8_t vec_i8x32n_get_max_index_i8(size_t size, const int8_t *src)
 ;
-size_t vec_i8v32n_get_max_index(size_t size, const int8_t *src)
+size_t vec_i8x32n_get_max_index(size_t size, const int8_t *src)
 ;
-void vec_i8v32n_get_minmax_index(size_t size, const int8_t *src, size_t *out_min, size_t *out_max)
+void vec_i8x32n_get_minmax_index(size_t size, const int8_t *src, size_t *out_min, size_t *out_max)
 ;
 
 
-int8_t vec_i8v32n_get_min(size_t size, const int8_t *src)
+int8_t vec_i8x32n_get_min(size_t size, const int8_t *src)
 {
     size_t units = size / 8;
     const __m64 *p = (const __m64*)src;
@@ -576,7 +576,7 @@ int8_t vec_i8v32n_get_min(size_t size, const int8_t *src)
     ANY_EMMS();
     return result;
 }
-int8_t vec_i8v32n_get_max(size_t size, const int8_t *src)
+int8_t vec_i8x32n_get_max(size_t size, const int8_t *src)
 {
     size_t units = size / 8;
     const __m64 *p = (const __m64*)src;
@@ -632,7 +632,7 @@ int8_t vec_i8v32n_get_max(size_t size, const int8_t *src)
     return result;
 }
 
-void vec_i8v32n_get_minmax(size_t size, const int8_t *src, int8_t *out_min, int8_t *out_max)
+void vec_i8x32n_get_minmax(size_t size, const int8_t *src, int8_t *out_min, int8_t *out_max)
 {
     size_t units = size / 8;
     const __m64 *p = (const __m64*)src;
@@ -731,7 +731,7 @@ void vec_i8v32n_get_minmax(size_t size, const int8_t *src, int8_t *out_min, int8
 /* search */
 
 // no-saturation
-static int32_t vec_i32v8n_count_i32_(size_t size, const int32_t *src, int32_t value)
+static int32_t vec_i32x8n_count_i32_(size_t size, const int32_t *src, int32_t value)
 {
     size_t units = size / 2;
     const __m64 *p = (const void*)src;
@@ -753,14 +753,14 @@ static int32_t vec_i32v8n_count_i32_(size_t size, const int32_t *src, int32_t va
     int32_t result = _mm_cvtsi64_si32(results);
     return result;
 }
-int32_t vec_i32v8n_count_i32(size_t size, const int32_t *src, int32_t value)
+int32_t vec_i32x8n_count_i32(size_t size, const int32_t *src, int32_t value)
 {
-    int32_t result = vec_i32v8n_count_i32_(size,src, value);
+    int32_t result = vec_i32x8n_count_i32_(size,src, value);
 
     ANY_EMMS();
     return result;
 }
-size_t vec_i32v8n_count(size_t size, const int32_t *src, int32_t value)
+size_t vec_i32x8n_count(size_t size, const int32_t *src, int32_t value)
 {
     const size_t unit_size = 0x20000000;
     size_t units = size / unit_size;
@@ -770,7 +770,7 @@ size_t vec_i32v8n_count(size_t size, const int32_t *src, int32_t value)
     for (int i = 0; i < units; ++i)
     {
         size_t result0 = result;
-        size_t result2 = vec_i32v8n_count_i32(unit_size, src + i * unit_size, value);
+        size_t result2 = vec_i32x8n_count_i32(unit_size, src + i * unit_size, value);
         result = result0 + result2;
         if (result < result0) result = SIZE_MAX;
     }
@@ -782,7 +782,7 @@ size_t vec_i32v8n_count(size_t size, const int32_t *src, int32_t value)
     {
         size_t result0 = result;
         // includes emms
-        size_t result2 = vec_i32v8n_count_i32(size2, src + base, value);
+        size_t result2 = vec_i32x8n_count_i32(size2, src + base, value);
         result = result0 + result2;
         if (result < result0) result = SIZE_MAX;
 
@@ -795,7 +795,7 @@ size_t vec_i32v8n_count(size_t size, const int32_t *src, int32_t value)
     }
 }
 // returns u16x4
-static __m64 vec_i16v16n_count_m64(size_t size, const int16_t *src, int16_t value)
+static __m64 vec_i16x16n_count_m64(size_t size, const int16_t *src, int16_t value)
 {
     size_t units = size / 4;
     const __m64 *p = (const void*)src;
@@ -815,9 +815,9 @@ static __m64 vec_i16v16n_count_m64(size_t size, const int16_t *src, int16_t valu
 
     return results;
 }
-int16_t vec_i16v16n_count_i16(size_t size, const int16_t *src, int16_t value)
+int16_t vec_i16x16n_count_i16(size_t size, const int16_t *src, int16_t value)
 {
-    __m64 results = vec_i16v16n_count_m64(size, src, value);
+    __m64 results = vec_i16x16n_count_m64(size, src, value);
     results = _mm_adds_pu16(results, _mm_srli_si64(results, 16));
     results = _mm_adds_pu16(results, _mm_srli_si64(results, 32));
     uint16_t result = _mm_cvtsi64_si32(results) & 0xFFFF;
@@ -825,7 +825,7 @@ int16_t vec_i16v16n_count_i16(size_t size, const int16_t *src, int16_t value)
     ANY_EMMS();
     return result > INT16_MAX ? INT16_MAX : result;
 }
-size_t vec_i16v16n_count(size_t size, const int16_t *src, int16_t value)
+size_t vec_i16x16n_count(size_t size, const int16_t *src, int16_t value)
 {
     const size_t unit_size = 0x8000 * 4;
     size_t units = size / unit_size;
@@ -834,7 +834,7 @@ size_t vec_i16v16n_count(size_t size, const int16_t *src, int16_t value)
 
     for (int i = 0; i < units; ++i)
     {
-        __m64 results = vec_i16v16n_count_m64(unit_size, src + i * unit_size, value);
+        __m64 results = vec_i16x16n_count_m64(unit_size, src + i * unit_size, value);
         const __m64 mask_lower = _mm_set1_pi32(0x0000FFFF);
         __m64 results2 = _mm_and_si64(_mm_srli_si64(results, 16), mask_lower);
         results = _mm_and_si64(results, mask_lower);
@@ -852,7 +852,7 @@ size_t vec_i16v16n_count(size_t size, const int16_t *src, int16_t value)
 
     if (size2 != 0)
     {
-        __m64 results = vec_i16v16n_count_m64(size2, src + base, value);
+        __m64 results = vec_i16x16n_count_m64(size2, src + base, value);
         const __m64 mask_lower = _mm_set1_pi32(0x0000FFFF);
         __m64 results2 = _mm_and_si64(_mm_srli_si64(results, 16), mask_lower);
         results = _mm_and_si64(results, mask_lower);
@@ -869,7 +869,7 @@ size_t vec_i16v16n_count(size_t size, const int16_t *src, int16_t value)
     return result;
 }
 // returns u8x8
-static __m64 vec_i8v32n_count_m64(size_t size, const int8_t *src, int8_t value)
+static __m64 vec_i8x32n_count_m64(size_t size, const int8_t *src, int8_t value)
 {
     size_t units = size / 8;
     const __m64 *p = (const void*)src;
@@ -889,9 +889,9 @@ static __m64 vec_i8v32n_count_m64(size_t size, const int8_t *src, int8_t value)
 
     return results;
 }
-int8_t vec_i8v32n_count_i8(size_t size, const int8_t *src, int8_t value)
+int8_t vec_i8x32n_count_i8(size_t size, const int8_t *src, int8_t value)
 {
-    __m64 results = vec_i8v32n_count_m64(size, src, value);
+    __m64 results = vec_i8x32n_count_m64(size, src, value);
     results = _mm_adds_pu8(results, _mm_srli_si64(results, 8));
     results = _mm_adds_pu8(results, _mm_srli_si64(results, 16));
     results = _mm_adds_pu8(results, _mm_srli_si64(results, 32));
@@ -900,7 +900,7 @@ int8_t vec_i8v32n_count_i8(size_t size, const int8_t *src, int8_t value)
     ANY_EMMS();
     return result > INT8_MAX ? INT8_MAX : result;
 }
-size_t vec_i8v32n_count(size_t size, const int8_t *src, int8_t value)
+size_t vec_i8x32n_count(size_t size, const int8_t *src, int8_t value)
 {
     const size_t unit_size = 0x80 * 8;
     size_t units = size / unit_size;
@@ -909,7 +909,7 @@ size_t vec_i8v32n_count(size_t size, const int8_t *src, int8_t value)
 
     for (int i = 0; i < units; ++i)
     {
-        __m64 results = vec_i8v32n_count_m64(unit_size, src + i * unit_size, value);
+        __m64 results = vec_i8x32n_count_m64(unit_size, src + i * unit_size, value);
         const __m64 mask_lower = _mm_set1_pi16(0x00FF);
         __m64 results2 = _mm_and_si64(_mm_srli_si64(results, 8), mask_lower);
         results = _mm_and_si64(results, mask_lower);
@@ -928,7 +928,7 @@ size_t vec_i8v32n_count(size_t size, const int8_t *src, int8_t value)
 
     if (size2 != 0)
     {
-        __m64 results = vec_i8v32n_count_m64(size2, src + base, value);
+        __m64 results = vec_i8x32n_count_m64(size2, src + base, value);
         const __m64 mask_lower = _mm_set1_pi16(0x00FF);
         __m64 results2 = _mm_and_si64(_mm_srli_si64(results, 8), mask_lower);
         results = _mm_and_si64(results, mask_lower);

@@ -176,7 +176,7 @@ export void vec_u8x32n_replace_all(uniform target_size_t size, uniform uint32 ds
 }
 
 
-export uniform int32 vec_i32v8n_min(uniform target_size_t size, uniform int32 src[])
+export uniform int32 vec_i32x8n_min(uniform target_size_t size, uniform int32 src[])
 {
     uniform target_size_t units = size / TARGET_WIDTH;
     uniform target_size_t vec_size = units * TARGET_WIDTH;
@@ -202,7 +202,7 @@ export uniform int32 vec_i32v8n_min(uniform target_size_t size, uniform int32 sr
     return result;
 }
 
-export uniform int32 vec_i32v8n_max(uniform target_size_t size, uniform int32 src[])
+export uniform int32 vec_i32x8n_max(uniform target_size_t size, uniform int32 src[])
 {
     uniform target_size_t units = size / TARGET_WIDTH;
     uniform target_size_t vec_size = units * TARGET_WIDTH;
@@ -228,7 +228,7 @@ export uniform int32 vec_i32v8n_max(uniform target_size_t size, uniform int32 sr
     return result;
 }
 
-export void vec_i32v8n_get_minmax(uniform target_size_t size, uniform int32 src[], uniform int32 out_min[], uniform int32 out_max[])
+export void vec_i32x8n_get_minmax(uniform target_size_t size, uniform int32 src[], uniform int32 out_min[], uniform int32 out_max[])
 {
     uniform target_size_t units = size / TARGET_WIDTH;
     uniform target_size_t vec_size = units * TARGET_WIDTH;
@@ -261,18 +261,18 @@ export void vec_i32v8n_get_minmax(uniform target_size_t size, uniform int32 src[
 
 
 // get width of min ... max
-export uniform int32 vec_i32v8n_get_range(uniform target_size_t size, uniform int32 src[])
+export uniform int32 vec_i32x8n_get_range(uniform target_size_t size, uniform int32 src[])
 {
     uniform int32 min_result;
     uniform int32 max_result;
 
-    vec_i32v8n_get_minmax(size, src, &min_result, &max_result);
+    vec_i32x8n_get_minmax(size, src, &min_result, &max_result);
 
     return max_result - min_result;
 }
 
 // generates longer code
-export uniform int32 vec_i32v8n_get_range_2(uniform target_size_t size, uniform int32 src[])
+export uniform int32 vec_i32x8n_get_range_2(uniform target_size_t size, uniform int32 src[])
 {
-    return vec_i32v8n_max(size, src) - vec_i32v8n_min(size, src);
+    return vec_i32x8n_max(size, src) - vec_i32x8n_min(size, src);
 }

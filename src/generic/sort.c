@@ -6,7 +6,7 @@
 
 /* reverse */
 
-void vec_i32v8n_inplace_reverse(size_t size, int32_t *data)
+void vec_i32x8n_inplace_reverse(size_t size, int32_t *data)
 {
     size_t units = size / 2;
 
@@ -19,7 +19,7 @@ void vec_i32v8n_inplace_reverse(size_t size, int32_t *data)
 		data[size - 1 - i] = it;
 	}
 }
-void vec_i16v16n_inplace_reverse(size_t size, int16_t *data)
+void vec_i16x16n_inplace_reverse(size_t size, int16_t *data)
 {
     size_t units = size / 2;
 
@@ -32,7 +32,7 @@ void vec_i16v16n_inplace_reverse(size_t size, int16_t *data)
 		data[size - 1 - i] = it;
 	}
 }
-void vec_i8v32n_inplace_reverse(size_t size, int8_t *data)
+void vec_i8x32n_inplace_reverse(size_t size, int8_t *data)
 {
     size_t units = size / 2;
 
@@ -46,7 +46,7 @@ void vec_i8v32n_inplace_reverse(size_t size, int8_t *data)
 	}
 }
 
-void vec_i32v8n_reverse(size_t size, const int32_t *src, int32_t *dst)
+void vec_i32x8n_reverse(size_t size, const int32_t *src, int32_t *dst)
 {
 	int i;
     #pragma omp parallel for num_threads(4)
@@ -55,7 +55,7 @@ void vec_i32v8n_reverse(size_t size, const int32_t *src, int32_t *dst)
 		dst[size - 1 - i] = src[i];
 	}
 }
-void vec_i16v16n_reverse(size_t size, const int16_t *src, int16_t *dst)
+void vec_i16x16n_reverse(size_t size, const int16_t *src, int16_t *dst)
 {
 	int i;
     #pragma omp parallel for num_threads(4)
@@ -64,7 +64,7 @@ void vec_i16v16n_reverse(size_t size, const int16_t *src, int16_t *dst)
 		dst[size - 1 - i] = src[i];
 	}
 }
-void vec_i8v32n_reverse(size_t size, const int8_t *src, int8_t *dst)
+void vec_i8x32n_reverse(size_t size, const int8_t *src, int8_t *dst)
 {
 	int i;
     #pragma omp parallel for num_threads(4)
@@ -211,7 +211,7 @@ void bits256n_ror(size_t size, const uint8_t *src, int n, uint8_t *dst)
 
 /* ascendant/descendant */
 
-void  vec_i32v8n_get_sorted_index(size_t size, const int32_t *src, int32_t element, int32_t *out_start, int32_t *out_end)
+void  vec_i32x8n_get_sorted_index(size_t size, const int32_t *src, int32_t element, int32_t *out_start, int32_t *out_end)
 {
 	int_fast32_t start = 0;
 	int_fast32_t end = 0;
@@ -229,7 +229,7 @@ void  vec_i32v8n_get_sorted_index(size_t size, const int32_t *src, int32_t eleme
 	*out_start = start;
 	*out_end = size - end;
 }
-void  vec_i16v16n_get_sorted_index(size_t size, const int16_t *src, int16_t element, int16_t *out_start, int16_t *out_end)
+void  vec_i16x16n_get_sorted_index(size_t size, const int16_t *src, int16_t element, int16_t *out_start, int16_t *out_end)
 {
 	int_fast16_t start = 0;
 	int_fast16_t end = 0;
@@ -247,7 +247,7 @@ void  vec_i16v16n_get_sorted_index(size_t size, const int16_t *src, int16_t elem
 	*out_start = start;
 	*out_end = size - end;
 }
-void  vec_i8v32n_get_sorted_index(size_t size, const int8_t *src, int8_t element, int8_t *out_start, int8_t *out_end)
+void  vec_i8x32n_get_sorted_index(size_t size, const int8_t *src, int8_t element, int8_t *out_start, int8_t *out_end)
 {
 	int_fast8_t start = 0;
 	int_fast8_t end = 0;
@@ -267,14 +267,14 @@ void  vec_i8v32n_get_sorted_index(size_t size, const int8_t *src, int8_t element
 }
 
 
-int  vec_i32v8n_is_sorted_a(size_t size, const int32_t *src)
+int  vec_i32x8n_is_sorted_a(size_t size, const int32_t *src)
 ;
-int  vec_i32v8n_is_sorted_d(size_t size, const int32_t *src)
+int  vec_i32x8n_is_sorted_d(size_t size, const int32_t *src)
 ;
-int  vec_i32v8n_is_sorted(size_t size, const int32_t *src)
+int  vec_i32x8n_is_sorted(size_t size, const int32_t *src)
 ;
 
-int  vec_i16v16n_is_sorted_a(size_t size, const int16_t *src)
+int  vec_i16x16n_is_sorted_a(size_t size, const int16_t *src)
 {
     int_fast16_t it = src[0];
 
@@ -288,7 +288,7 @@ int  vec_i16v16n_is_sorted_a(size_t size, const int16_t *src)
 
     return 1;
 }
-int  vec_i16v16n_is_sorted_d(size_t size, const int16_t *src)
+int  vec_i16x16n_is_sorted_d(size_t size, const int16_t *src)
 {
     int_fast16_t it = src[0];
 
@@ -302,7 +302,7 @@ int  vec_i16v16n_is_sorted_d(size_t size, const int16_t *src)
 
     return 1;
 }
-int  vec_i16v16n_is_sorted(size_t size, const int16_t *src)
+int  vec_i16x16n_is_sorted(size_t size, const int16_t *src)
 {
     int_fast16_t it = src[0];
     int ascendant = 1;
@@ -322,7 +322,7 @@ int  vec_i16v16n_is_sorted(size_t size, const int16_t *src)
     return 1;
 }
 
-int  vec_i8v32n_is_sorted_a(size_t size, const int8_t *src)
+int  vec_i8x32n_is_sorted_a(size_t size, const int8_t *src)
 {
     int_fast8_t it = src[0];
 
@@ -336,17 +336,17 @@ int  vec_i8v32n_is_sorted_a(size_t size, const int8_t *src)
 
     return 1;
 }
-int  vec_i8v32n_is_sorted_d(size_t size, const int8_t *src)
+int  vec_i8x32n_is_sorted_d(size_t size, const int8_t *src)
 ;
-int  vec_i8v32n_is_sorted(size_t size, const int8_t *src)
+int  vec_i8x32n_is_sorted(size_t size, const int8_t *src)
 ;
 
 
-int  vec_i16v16n_is_sortable(size_t size, const int16_t *src)
+int  vec_i16x16n_is_sortable(size_t size, const int16_t *src)
 {
 	return size <= INT16_MAX;
 }
-void  vec_i16v16n_sort(size_t size, const int16_t *src, int16_t *dst)
+void  vec_i16x16n_sort(size_t size, const int16_t *src, int16_t *dst)
 {
     int i;
     #pragma omp parallel for num_threads(4)
@@ -355,7 +355,7 @@ void  vec_i16v16n_sort(size_t size, const int16_t *src, int16_t *dst)
 		int_fast16_t it = src[i];
 		int16_t start, end;
 
-		vec_i16v16n_get_sorted_index(size, src, it, &start, &end);
+		vec_i16x16n_get_sorted_index(size, src, it, &start, &end);
 
 		for (size_t j = start; j < end; ++j)
 		{
