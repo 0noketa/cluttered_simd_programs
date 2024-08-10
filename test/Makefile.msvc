@@ -152,6 +152,13 @@ ssse3_dss8:
 avx2_dss8:
 	$(CC) /O2 /arch:AVX2 /Feavx2_dss8.exe test_dss8.c $(SRC_DIR)\x86/misc_avx2.c
 
+generic_histogram:
+	$(CC) /O2 /arch:IA32 /Fegeneric_histogram.exe test_histogram.c $(SRC_DIR)\generic/search.c
+sse2_histogram:
+	$(CC) /O2 /arch:SSE2 /Fesse2_histogram.exe test_histogram.c $(SRC_DIR)\x86/search_sse2.c
+avx2_histogram:
+	$(CC) /O2 /arch:AVX2 /Feavx2_histogram.exe test_histogram.c $(SRC_DIR)\x86/search_avx2.c
+
 generic_diff:
 	$(CC) /O2 /arch:IA32 /Fegeneric_diff.exe test_diff.c $(SRC_DIR)\generic/misc.c
 generic_diff_x4:

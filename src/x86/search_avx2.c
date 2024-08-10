@@ -13,6 +13,90 @@
 #include "../../include/search.h"
 
 
+/* local */
+#if 1
+#include <stdio.h>
+static void dump(const char *s, __m256i current)
+{
+    int it;
+   fputs(s, stdout);
+ 
+    #define template_block(n) \
+    { \
+        it = _mm256_extract_epi32(current, n); \
+        \
+        for (int i = 0; i < 2; ++i) \
+        { \
+            printf("%d,", (int)(int16_t)(it & UINT16_MAX)); \
+            it >>= 16; \
+        } \
+    }
+    template_block(0)
+    template_block(1)
+    template_block(2)
+    template_block(3)
+    template_block(4)
+    template_block(5)
+    template_block(6)
+    template_block(7)
+
+    fputs("\n", stdout);
+}
+static void dump32_128(const char *s, __m128i current)
+{
+    fputs(s, stdout);
+ 
+    for (int i = 0; i < 4; ++i)
+    {
+        int32_t it = _mm_cvtsi128_si32(current);
+        current = _mm_srli_si128(current, 4);
+        printf("%d,", (int)it);
+    }
+
+    fputs("\n", stdout);
+}
+static void dump16_128(const char *s, __m128i current)
+{
+    fputs(s, stdout);
+ 
+    for (int i = 0; i < 8; ++i)
+    {
+        int16_t it = _mm_cvtsi128_si32(current) & 0xFFFF;
+        current = _mm_srli_si128(current, 2);
+        printf("%d,", (int)it);
+    }
+
+    fputs("\n", stdout);
+}
+static void dump8(const char *s, __m256i current)
+{
+
+    fputs(s, stdout);
+
+    int8_t *p = (int8_t*)&current;
+    for (int i = 0; i < 32; ++i)
+    {
+        printf("%d,", p[i]);
+    }
+
+    fputs("\n", stdout);
+}
+static void dump8_128(const char *s, __m128i current)
+{
+
+    fputs(s, stdout);
+
+    int8_t *p = (int8_t*)&current;
+    for (int i = 0; i < 16; ++i)
+    {
+        printf("%d,", p[i]);
+    }
+
+    fputs("\n", stdout);
+}
+#endif
+
+
 /* min/max */
 
 size_t vec_i32x8n_get_min_index(size_t size, const int32_t *src);
@@ -601,3 +685,165 @@ size_t vec_i8x32n_count(size_t size, const int8_t *src, int8_t value)
 
     return result;
 }
+
+
+/* hisotgram */
+
+void vec_i8x32n_get_histogram_u8x4(size_t size, const int8_t *src, int8_t _min, int8_t _max, uint8_t *out_bins)
+{
+    int8_t mins0[4];
+    int8_t maxs0[4];
+    {
+        double w = (_max - _min + 1) / 4;
+        for (int i = 0; i < 4; ++i) mins0[i] = _min + w * i;
+        for (int i = 0; i < 3; ++i) maxs0[i] = mins0[i + 1] - 1;
+        maxs0[3] = _max;
+    }
+
+    size_t units = size / 16;
+    const __m128i *p = (const void*)src;
+    __m128i mins = _mm_set_epi8(
+            mins0[3], mins0[2], mins0[1], mins0[0],  mins0[3], mins0[2], mins0[1], mins0[0],
+            mins0[3], mins0[2], mins0[1], mins0[0],  mins0[3], mins0[2], mins0[1], mins0[0]);
+    __m128i maxs = _mm_set_epi8(
+            maxs0[3], maxs0[2], maxs0[1], maxs0[0],  maxs0[3], maxs0[2], maxs0[1], maxs0[0],
+            maxs0[3], maxs0[2], maxs0[1], maxs0[0],  maxs0[3], maxs0[2], maxs0[1], maxs0[0]);
+    __m128i results = _mm_setzero_si128();
+    __m128i ones = _mm_set1_epi8(1);
+
+    for (int i = 0; i < units; ++i)
+    {
+        __m128i it = p[i];
+
+        __m128i flags = _mm_cmpgt_epi8(it, mins);
+        __m128i flags3 = _mm_cmpeq_epi8(it, mins);
+        __m128i flags2 = _mm_cmpgt_epi8(maxs, it);
+        __m128i flags4 = _mm_cmpeq_epi8(maxs, it);
+        flags = _mm_or_si128(flags, flags3);
+        flags2 = _mm_or_si128(flags2, flags4);
+        flags = _mm_and_si128(flags, flags2);
+        flags = _mm_and_si128(flags, ones);
+        results = _mm_adds_epi8(results, flags);
+
+        mins = _mm_or_si128(_mm_slli_si128(mins, 1), _mm_srli_si128(mins, 15));
+        maxs = _mm_or_si128(_mm_slli_si128(maxs, 1), _mm_srli_si128(maxs, 15));
+        
+        #define count_and_rotate(i) \
+                flags = _mm_cmpgt_epi8(it, mins);  \
+                flags3 = _mm_cmpeq_epi8(it, mins);  \
+                flags2 = _mm_cmpgt_epi8(maxs, it);  \
+                flags4 = _mm_cmpeq_epi8(maxs, it);  \
+                flags = _mm_or_si128(flags, flags3);  \
+                flags2 = _mm_or_si128(flags2, flags4);  \
+                flags = _mm_and_si128(flags, flags2);  \
+                flags = _mm_and_si128(flags, ones);  \
+                flags = _mm_or_si128(_mm_srli_si128(flags, i), _mm_slli_si128(flags, 16 - i));  \
+                results = _mm_adds_epi8(results, flags);  \
+                \
+                mins = _mm_or_si128(_mm_slli_si128(mins, 1), _mm_srli_si128(mins, 15));  \
+                maxs = _mm_or_si128(_mm_slli_si128(maxs, 1), _mm_srli_si128(maxs, 15));  \
+
+        count_and_rotate(1)
+        count_and_rotate(2)
+        count_and_rotate(3)
+        count_and_rotate(4)
+        #undef count_and_rotate
+    }
+
+    __m128i results2 = _mm_srli_si128(results, 8);
+    results = _mm_add_epi8(results, results2);
+    results2 = _mm_srli_si128(results, 4);
+    results = _mm_add_epi8(results, results2);
+
+    uint32_t results_u32 = _mm_cvtsi128_si32(results);
+    for (int i = 0; i < 4; ++i)
+    {
+        out_bins[i] = results_u32 & 0xFF;
+        results_u32 >>= 8;
+    }
+}
+void vec_i8x32n_get_histogram_u8x8(size_t size, const int8_t *src, int8_t _min, int8_t _max, uint8_t *out_bins)
+{
+    int8_t mins0[8];
+    int8_t maxs0[8];
+    {
+        double w = (_max - _min + 1) / 8;
+        for (int i = 0; i < 8; ++i) mins0[i] = _min + w * i;
+        for (int i = 0; i < 7; ++i) maxs0[i] = mins0[i + 1] - 1;
+        maxs0[7] = _max;
+    }
+
+    size_t units = size / 16;
+    const __m128i *p = (const void*)src;
+    __m128i mins = _mm_set_epi8(
+            mins0[7], mins0[6], mins0[5], mins0[4],  mins0[3], mins0[2], mins0[1], mins0[0],
+            mins0[7], mins0[6], mins0[5], mins0[4],  mins0[3], mins0[2], mins0[1], mins0[0]);
+    __m128i maxs = _mm_set_epi8(
+            maxs0[7], maxs0[6], maxs0[5], maxs0[4],  maxs0[3], maxs0[2], maxs0[1], maxs0[0],
+            maxs0[7], maxs0[6], maxs0[5], maxs0[4],  maxs0[3], maxs0[2], maxs0[1], maxs0[0]);
+    __m128i results = _mm_setzero_si128();
+    __m128i ones = _mm_set1_epi8(1);
+
+    for (int i = 0; i < units; ++i)
+    {
+        __m128i it = p[i];
+
+        __m128i flags = _mm_cmpgt_epi8(it, mins);
+        __m128i flags3 = _mm_cmpeq_epi8(it, mins);
+        __m128i flags2 = _mm_cmpgt_epi8(maxs, it);
+        __m128i flags4 = _mm_cmpeq_epi8(maxs, it);
+        flags = _mm_or_si128(flags, flags3);
+        flags2 = _mm_or_si128(flags2, flags4);
+        flags = _mm_and_si128(flags, flags2);
+        flags = _mm_and_si128(flags, ones);
+        results = _mm_adds_epi8(results, flags);
+
+        mins = _mm_or_si128(_mm_slli_si128(mins, 1), _mm_srli_si128(mins, 15));
+        maxs = _mm_or_si128(_mm_slli_si128(maxs, 1), _mm_srli_si128(maxs, 15));
+
+        #define count_and_rotate(i) \
+                flags = _mm_cmpgt_epi8(it, mins);  \
+                flags3 = _mm_cmpeq_epi8(it, mins);  \
+                flags2 = _mm_cmpgt_epi8(maxs, it);  \
+                flags4 = _mm_cmpeq_epi8(maxs, it);  \
+                flags = _mm_or_si128(flags, flags3);  \
+                flags2 = _mm_or_si128(flags2, flags4);  \
+                flags = _mm_and_si128(flags, flags2);  \
+                flags = _mm_and_si128(flags, ones);  \
+                flags = _mm_or_si128(_mm_srli_si128(flags, i), _mm_slli_si128(flags, 16 - i));  \
+                results = _mm_adds_epi8(results, flags);  \
+                \
+                mins = _mm_or_si128(_mm_slli_si128(mins, 1), _mm_srli_si128(mins, 15));  \
+                maxs = _mm_or_si128(_mm_slli_si128(maxs, 1), _mm_srli_si128(maxs, 15));  \
+
+        count_and_rotate(1)
+        count_and_rotate(2)
+        count_and_rotate(3)
+        count_and_rotate(4)
+        count_and_rotate(5)
+        count_and_rotate(6)
+        count_and_rotate(7)
+        #undef count_and_rotate
+    }
+
+    __m128i results2 = _mm_srli_si128(results, 8);
+    results = _mm_add_epi8(results, results2);
+
+    uint32_t results_u32 = _mm_cvtsi128_si32(results);
+    for (int i = 0; i < 4; ++i)
+    {
+        out_bins[i] = results_u32 & 0xFF;
+        results_u32 >>= 8;
+    }
+
+    results = _mm_srli_si128(results, 4);
+    results_u32 = _mm_cvtsi128_si32(results);
+    for (int i = 4; i < 8; ++i)
+    {
+        out_bins[i] = results_u32 & 0xFF;
+        results_u32 >>= 8;
+    }
+}
+void vec_i8x32n_get_histogram_u16x4(size_t size, const int8_t *src, int8_t _min, int8_t _max, uint16_t *out_bins);
+void vec_i8x32n_get_histogram_u16x8(size_t size, const int8_t *src, int8_t _min, int8_t _max, uint16_t *out_bins);
+void vec_i8x32n_get_histogram_u32x4(size_t size, const int8_t *src, int8_t _min, int8_t _max, uint32_t *out_bins);

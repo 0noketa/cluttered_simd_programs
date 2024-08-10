@@ -402,3 +402,52 @@ int32_t vec_i32x8n_get_first_index(size_t size, const int32_t *src, int32_t elem
 }
 int16_t vec_i16x16n_get_first_index(size_t size, const int16_t *src, int16_t element);
 int8_t vec_i8x32n_get_first_index(size_t size, const int8_t *src, int8_t element);
+
+
+/* hisotgram */
+
+void vec_i8x32n_get_histogram_i8x4(size_t size, const int8_t *src, int8_t _min, int8_t _max, uint8_t *out_bins)
+{
+    int8_t mins0[4];
+    int8_t maxs0[4];
+    {
+        double w = (_max - _min + 1) / 4;
+        for (int i = 0; i < 4; ++i) mins0[i] = _min + w * i;
+        for (int i = 0; i < 3; ++i) maxs0[i] = mins0[i + 1] - 1;
+        maxs0[3] = _max;
+    }
+
+    for (int i = 0; i < 4; ++i) out_bins[i] = 0;
+
+    for (int i = 0; i < size; ++i)
+    {
+        for (int j = 0; j < 4; ++j)
+        {
+            if (mins0[j] <= src[i] && src[i] <= maxs0[j]) out_bins[j]++;
+        }
+    }
+}
+void vec_i8x32n_get_histogram_u8x8(size_t size, const int8_t *src, int8_t _min, int8_t _max, uint8_t *out_bins)
+{
+    int8_t mins0[8];
+    int8_t maxs0[8];
+    {
+        double w = (_max - _min + 1) / 8;
+        for (int i = 0; i < 8; ++i) mins0[i] = _min + w * i;
+        for (int i = 0; i < 7; ++i) maxs0[i] = mins0[i + 1] - 1;
+        maxs0[7] = _max;
+    }
+
+    for (int i = 0; i < 8; ++i) out_bins[i] = 0;
+
+    for (int i = 0; i < size; ++i)
+    {
+        for (int j = 0; j < 8; ++j)
+        {
+            if (mins0[j] <= src[i] && src[i] <= maxs0[j]) out_bins[j]++;
+        }
+    }
+}
+void vec_i8x32n_get_histogram_u16x4(size_t size, const int8_t *src, int8_t _min, int8_t _max, uint16_t *out_bins);
+void vec_i8x32n_get_histogram_u16x8(size_t size, const int8_t *src, int8_t _min, int8_t _max, uint16_t *out_bins);
+void vec_i8x32n_get_histogram_u32x4(size_t size, const int8_t *src, int8_t _min, int8_t _max, uint32_t *out_bins);
