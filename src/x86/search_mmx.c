@@ -15,8 +15,10 @@
 #define USE_ANDNOT
 #endif
 
-
+/* local */
+#if 0
 #include <stdio.h>
+
 static void dump_u8(const char *s, __m64 current)
 {
     ANY_EMMS();
@@ -30,6 +32,7 @@ static void dump_u8(const char *s, __m64 current)
     }
     puts("");
 }
+#endif
 
 
 /* min/max */
@@ -945,3 +948,280 @@ size_t vec_i8x32n_count(size_t size, const int8_t *src, int8_t value)
     ANY_EMMS();
     return result;
 }
+
+
+/* hisotgram */
+
+void vec_i16x16n_get_histogram_i16x8(size_t size, const int16_t *src, int16_t _min, int16_t _max, int16_t *out_bins)
+{
+    int16_t mins0[8];
+    int16_t maxs0[8];
+    {
+        double w = (_max - _min + 1) / 8;
+        for (int i = 0; i < 8; ++i) mins0[i] = _min + w * i;
+        for (int i = 0; i < 7; ++i) maxs0[i] = mins0[i + 1] - 1;
+        maxs0[7] = _max;
+    }
+
+    size_t units = size / 4;
+    const __m64 *p = (const void*)src;
+    __m64 mins_hi = _mm_set_pi16(mins0[7], mins0[6], mins0[5], mins0[4]);
+    __m64 mins_lo = _mm_set_pi16(mins0[3], mins0[2], mins0[1], mins0[0]);
+    __m64 maxs_hi = _mm_set_pi16(maxs0[7], maxs0[6], maxs0[5], maxs0[4]);
+    __m64 maxs_lo = _mm_set_pi16(maxs0[3], maxs0[2], maxs0[1], maxs0[0]);
+    __m64 results_hi = _mm_setzero_si64();
+    __m64 results_lo = _mm_setzero_si64();
+    __m64 ones = _mm_set1_pi16(1);
+
+    for (int i = 0; i < units; ++i)
+    {
+        __m64 it = p[i];
+
+        __m64 flags = _mm_cmpgt_pi16(it, mins_lo);
+        __m64 flags3 = _mm_cmpeq_pi16(it, mins_lo);
+        __m64 flags2 = _mm_cmpgt_pi16(maxs_lo, it);
+        __m64 flags4 = _mm_cmpeq_pi16(maxs_lo, it);
+        flags = _mm_or_si64(flags, flags3);
+        flags2 = _mm_or_si64(flags2, flags4);
+        flags = _mm_and_si64(flags, flags2);
+        flags = _mm_and_si64(flags, ones);
+        results_lo = _mm_adds_pi16(results_lo, flags);
+
+        flags = _mm_cmpgt_pi16(it, mins_hi);
+        flags3 = _mm_cmpeq_pi16(it, mins_hi);
+        flags2 = _mm_cmpgt_pi16(maxs_hi, it);
+        flags4 = _mm_cmpeq_pi16(maxs_hi, it);
+        flags = _mm_or_si64(flags, flags3);
+        flags2 = _mm_or_si64(flags2, flags4);
+        flags = _mm_and_si64(flags, flags2);
+        flags = _mm_and_si64(flags, ones);
+        results_hi = _mm_adds_pi16(results_hi, flags);
+
+        mins_hi = _mm_or_si64(_mm_slli_si64(mins_hi, 16), _mm_srli_si64(mins_hi, 48));
+        mins_lo = _mm_or_si64(_mm_slli_si64(mins_lo, 16), _mm_srli_si64(mins_lo, 48));
+        maxs_hi = _mm_or_si64(_mm_slli_si64(maxs_hi, 16), _mm_srli_si64(maxs_hi, 48));
+        maxs_lo = _mm_or_si64(_mm_slli_si64(maxs_lo, 16), _mm_srli_si64(maxs_lo, 48));
+        
+        #define count_and_rotate(i) \
+                flags = _mm_cmpgt_pi16(it, mins_lo);  \
+                flags3 = _mm_cmpeq_pi16(it, mins_lo);  \
+                flags2 = _mm_cmpgt_pi16(maxs_lo, it);  \
+                flags4 = _mm_cmpeq_pi16(maxs_lo, it);  \
+                flags = _mm_or_si64(flags, flags3);  \
+                flags2 = _mm_or_si64(flags2, flags4);  \
+                flags = _mm_and_si64(flags, flags2);  \
+                flags = _mm_and_si64(flags, ones);  \
+                flags = _mm_or_si64(_mm_srli_si64(flags, i * 16), _mm_slli_si64(flags, 64 - i * 16));  \
+                results_lo = _mm_adds_pi16(results_lo, flags);  \
+                \
+                flags = _mm_cmpgt_pi16(it, mins_hi);  \
+                flags3 = _mm_cmpeq_pi16(it, mins_hi);  \
+                flags2 = _mm_cmpgt_pi16(maxs_hi, it);  \
+                flags4 = _mm_cmpeq_pi16(maxs_hi, it);  \
+                flags = _mm_or_si64(flags, flags3);  \
+                flags2 = _mm_or_si64(flags2, flags4);  \
+                flags = _mm_and_si64(flags, flags2);  \
+                flags = _mm_and_si64(flags, ones);  \
+                flags = _mm_or_si64(_mm_srli_si64(flags, i * 16), _mm_slli_si64(flags, 64 - i * 16));  \
+                results_hi = _mm_adds_pi16(results_hi, flags);  \
+                \
+                mins_hi = _mm_or_si64(_mm_slli_si64(mins_hi, 16), _mm_srli_si64(mins_hi, 48));  \
+                mins_lo = _mm_or_si64(_mm_slli_si64(mins_lo, 16), _mm_srli_si64(mins_lo, 48));  \
+                maxs_hi = _mm_or_si64(_mm_slli_si64(maxs_hi, 16), _mm_srli_si64(maxs_hi, 48));  \
+                maxs_lo = _mm_or_si64(_mm_slli_si64(maxs_lo, 16), _mm_srli_si64(maxs_lo, 48));
+
+        count_and_rotate(1)
+        count_and_rotate(2)
+        count_and_rotate(3)
+        #undef count_and_rotate
+     }
+
+    for (int j = 0; j < 2; ++j)
+    {
+        uint32_t results_u32 = _mm_cvtsi64_si32(results_lo);
+        for (int i = 0; i < 2; ++i)
+        {
+            out_bins[j * 2 + i] = results_u32 & 0xFFFF;
+            results_u32 >>= 16;
+        }
+        results_lo = _mm_srli_si64(results_lo, 32);
+    }
+
+    for (int j = 0; j < 2; ++j)
+    {
+        uint32_t results_u32 = _mm_cvtsi64_si32(results_hi);
+        for (int i = 0; i < 2; ++i)
+        {
+            out_bins[4 + j * 2 + i] = results_u32 & 0xFFFF;
+            results_u32 >>= 16;
+        }
+        results_hi = _mm_srli_si64(results_hi, 32);
+    }
+
+    ANY_EMMS();
+}
+void vec_i8x32n_get_histogram_i16x4(size_t size, const int8_t *src, int8_t _min, int8_t _max, int16_t *out_bins)
+{
+    int8_t mins0[4];
+    int8_t maxs0[4];
+    {
+        double w = (_max - _min + 1) / 4;
+        for (int i = 0; i < 4; ++i) mins0[i] = _min + w * i;
+        for (int i = 0; i < 3; ++i) maxs0[i] = mins0[i + 1] - 1;
+        maxs0[3] = _max;
+    }
+
+    size_t units = size / 8;
+    const __m64 *p = (const void*)src;
+    __m64 mins = _mm_set_pi8(
+            mins0[3], mins0[2], mins0[1], mins0[0],  mins0[3], mins0[2], mins0[1], mins0[0]);
+    __m64 maxs = _mm_set_pi8(
+            maxs0[3], maxs0[2], maxs0[1], maxs0[0],  maxs0[3], maxs0[2], maxs0[1], maxs0[0]);
+    __m64 results = _mm_setzero_si64();
+    __m64 ones = _mm_set1_pi8(1);
+
+    for (int i = 0; i < units; ++i)
+    {
+        __m64 it = p[i];
+
+        __m64 flags = _mm_cmpgt_pi8(it, mins);
+        __m64 flags3 = _mm_cmpeq_pi8(it, mins);
+        __m64 flags2 = _mm_cmpgt_pi8(maxs, it);
+        __m64 flags4 = _mm_cmpeq_pi8(maxs, it);
+        flags = _mm_or_si64(flags, flags3);
+        flags2 = _mm_or_si64(flags2, flags4);
+        flags = _mm_and_si64(flags, flags2);
+        flags = _mm_and_si64(flags, ones);
+        __m64 zeros = _mm_setzero_si64();
+        results = _mm_adds_pi16(results, _mm_unpackhi_pi8(flags, zeros));
+        results = _mm_adds_pi16(results, _mm_unpacklo_pi8(flags, zeros));
+
+        mins = _mm_or_si64(_mm_slli_si64(mins, 8), _mm_srli_si64(mins, 63));
+        maxs = _mm_or_si64(_mm_slli_si64(maxs, 8), _mm_srli_si64(maxs, 63));
+        
+        #define count_and_rotate(i) \
+                flags = _mm_cmpgt_pi8(it, mins);  \
+                flags3 = _mm_cmpeq_pi8(it, mins);  \
+                flags2 = _mm_cmpgt_pi8(maxs, it);  \
+                flags4 = _mm_cmpeq_pi8(maxs, it);  \
+                flags = _mm_or_si64(flags, flags3);  \
+                flags2 = _mm_or_si64(flags2, flags4);  \
+                flags = _mm_and_si64(flags, flags2);  \
+                flags = _mm_and_si64(flags, ones);  \
+                flags = _mm_or_si64(_mm_srli_si64(flags, i * 8), _mm_slli_si64(flags, 63 - i * 8));  \
+                results = _mm_adds_pi16(results, _mm_unpackhi_pi8(flags, zeros));  \
+                results = _mm_adds_pi16(results, _mm_unpacklo_pi8(flags, zeros));  \
+                \
+                mins = _mm_or_si64(_mm_slli_si64(mins, 8), _mm_srli_si64(mins, 63));  \
+                maxs = _mm_or_si64(_mm_slli_si64(maxs, 8), _mm_srli_si64(maxs, 63));
+
+        count_and_rotate(1)
+        count_and_rotate(2)
+        count_and_rotate(3)
+        #undef count_and_rotate
+     }
+
+    for (int j = 0; j < 2; ++j)
+    {
+        uint32_t results_u32 = _mm_cvtsi64_si32(results);
+        for (int i = 0; i < 2; ++i)
+        {
+            out_bins[j * 2 + i] = results_u32 & 0xFFFF;
+            results_u32 >>= 16;
+        }
+        results = _mm_srli_si64(results, 32);
+    }
+
+    ANY_EMMS();
+}
+void vec_i8x32n_get_histogram_i16x8(size_t size, const int8_t *src, int8_t _min, int8_t _max, int16_t *out_bins)
+{
+    int8_t mins0[8];
+    int8_t maxs0[8];
+    {
+        double w = (_max - _min + 1) / 8;
+        for (int i = 0; i < 8; ++i) mins0[i] = _min + w * i;
+        for (int i = 0; i < 7; ++i) maxs0[i] = mins0[i + 1] - 1;
+        maxs0[7] = _max;
+    }
+
+    size_t units = size / 8;
+    const __m64 *p = (const void*)src;
+    __m64 mins = _mm_set_pi8(
+            mins0[7], mins0[6], mins0[5], mins0[4],  mins0[3], mins0[2], mins0[1], mins0[0]);
+    __m64 maxs = _mm_set_pi8(
+            maxs0[7], maxs0[6], maxs0[5], maxs0[4],  maxs0[3], maxs0[2], maxs0[1], maxs0[0]);
+    __m64 results_hi = _mm_setzero_si64();
+    __m64 results_lo = _mm_setzero_si64();
+    __m64 ones = _mm_set1_pi8(1);
+
+    for (int i = 0; i < units; ++i)
+    {
+        __m64 it = p[i];
+
+        __m64 flags = _mm_cmpgt_pi8(it, mins);
+        __m64 flags3 = _mm_cmpeq_pi8(it, mins);
+        __m64 flags2 = _mm_cmpgt_pi8(maxs, it);
+        __m64 flags4 = _mm_cmpeq_pi8(maxs, it);
+        flags = _mm_or_si64(flags, flags3);
+        flags2 = _mm_or_si64(flags2, flags4);
+        flags = _mm_and_si64(flags, flags2);
+        flags = _mm_and_si64(flags, ones);
+        __m64 zeros = _mm_setzero_si64();
+        results_hi = _mm_adds_pi16(results_hi, _mm_unpackhi_pi8(flags, zeros));
+        results_lo = _mm_adds_pi16(results_lo, _mm_unpacklo_pi8(flags, zeros));
+
+        mins = _mm_or_si64(_mm_slli_si64(mins, 8), _mm_srli_si64(mins, 56));
+        maxs = _mm_or_si64(_mm_slli_si64(maxs, 8), _mm_srli_si64(maxs, 56));
+        
+        #define count_and_rotate(i) \
+                flags = _mm_cmpgt_pi8(it, mins);  \
+                flags3 = _mm_cmpeq_pi8(it, mins);  \
+                flags2 = _mm_cmpgt_pi8(maxs, it);  \
+                flags4 = _mm_cmpeq_pi8(maxs, it);  \
+                flags = _mm_or_si64(flags, flags3);  \
+                flags2 = _mm_or_si64(flags2, flags4);  \
+                flags = _mm_and_si64(flags, flags2);  \
+                flags = _mm_and_si64(flags, ones);  \
+                flags = _mm_or_si64(_mm_srli_si64(flags, i * 8), _mm_slli_si64(flags, 64 - i * 8));  \
+                results_hi = _mm_adds_pi16(results_hi, _mm_unpackhi_pi8(flags, zeros));  \
+                results_lo = _mm_adds_pi16(results_lo, _mm_unpacklo_pi8(flags, zeros));  \
+                \
+                mins = _mm_or_si64(_mm_slli_si64(mins, 8), _mm_srli_si64(mins, 56));  \
+                maxs = _mm_or_si64(_mm_slli_si64(maxs, 8), _mm_srli_si64(maxs, 56));
+
+        count_and_rotate(1)
+        count_and_rotate(2)
+        count_and_rotate(3)
+        count_and_rotate(4)
+        count_and_rotate(5)
+        count_and_rotate(6)
+        count_and_rotate(7)
+        #undef count_and_rotate
+     }
+
+    for (int j = 0; j < 2; ++j)
+    {
+        uint32_t results_u32 = _mm_cvtsi64_si32(results_lo);
+        for (int i = 0; i < 2; ++i)
+        {
+            out_bins[j * 2 + i] = results_u32 & 0xFFFF;
+            results_u32 >>= 16;
+        }
+        results_lo = _mm_srli_si64(results_lo, 32);
+    }
+
+    for (int j = 0; j < 2; ++j)
+    {
+        uint32_t results_u32 = _mm_cvtsi64_si32(results_hi);
+        for (int i = 0; i < 2; ++i)
+        {
+            out_bins[4 + j * 2 + i] = results_u32 & 0xFFFF;
+            results_u32 >>= 16;
+        }
+        results_hi = _mm_srli_si64(results_hi, 32);
+    }
+
+    ANY_EMMS();
+}
+void vec_i8x32n_get_histogram_i32x4(size_t size, const int8_t *src, int8_t _min, int8_t _max, int32_t *out_bins);
