@@ -172,11 +172,11 @@ extern uint32_t vec_u8v32n_ess_u32(size_t size, const uint8_t *src, const uint8_
 
 /* hisotgram */
 
-extern void vec_i8x32n_get_histogram_i8x4(size_t size, const int8_t *src, int8_t min, int8_t max, uint8_t *out_bins);
-extern void vec_i8x32n_get_histogram_i8x8(size_t size, const int8_t *src, int8_t min, int8_t max, uint8_t *out_bins);
-extern void vec_i8x32n_get_histogram_i16x4(size_t size, const int8_t *src, int8_t min, int8_t max, uint16_t *out_bins);
-extern void vec_i8x32n_get_histogram_i16x8(size_t size, const int8_t *src, int8_t min, int8_t max, uint16_t *out_bins);
-extern void vec_i8x32n_get_histogram_i32x4(size_t size, const int8_t *src, int8_t min, int8_t max, uint32_t *out_bins);
+extern void vec_i16x16n_get_histogram_i16x4(size_t size, const int16_t *src, int16_t min, int16_t max, int16_t *out_bins);
+extern void vec_i16x16n_get_histogram_i16x8(size_t size, const int16_t *src, int16_t min, int16_t max, int16_t *out_bins);
+extern void vec_i8x32n_get_histogram_i16x4(size_t size, const int8_t *src, int8_t min, int8_t max, int16_t *out_bins);
+extern void vec_i8x32n_get_histogram_i16x8(size_t size, const int8_t *src, int8_t min, int8_t max, int16_t *out_bins);
+extern void vec_i8x32n_get_histogram_i32x4(size_t size, const int8_t *src, int8_t min, int8_t max, int32_t *out_bins);
 
 
 /* sorted arrays */

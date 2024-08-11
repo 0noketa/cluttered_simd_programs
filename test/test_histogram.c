@@ -5,79 +5,79 @@
 #include "../include/simd_tools.h"
 
 
-#define DATA8_SIZE 256
-alignas(32) int8_t data8_a[DATA8_SIZE * 4];
-alignas(32) int8_t data8_b[DATA8_SIZE * 4];
-alignas(32) int8_t data8_c[DATA8_SIZE * 4];
+#define DATA_SIZE 1024
+alignas(32) int16_t data_a[DATA_SIZE];
+alignas(32) int16_t data_b[DATA_SIZE];
+alignas(32) int16_t data_c[DATA_SIZE];
 
 int main()
 {
-    for (int i = 0; i < 256; ++i)
+    for (int i = 0; i < 1024; ++i)
     {
-        data8_a[i] = INT8_MIN + i;
-    }
-
-    for (int i = 0; i < 64; ++i)
-    {
-        data8_b[i] = INT8_MIN + i / 2;
-        data8_b[DATA8_SIZE - 1 - i] = INT8_MIN + i / 2;
-    }
-    for (int i = 0; i < 64; ++i)
-    {
-        data8_b[128 - i] = INT8_MAX - i * 3.5;
-        data8_b[128 + i] = INT8_MAX - i * 3.5;
+        data_a[i] = INT16_MIN + i * 64;
     }
 
     for (int i = 0; i < 256; ++i)
     {
-        if (i % 23 == 0) data8_c[i] = -128;
-        else if (i % 17 == 0) data8_c[i] = -96;
-        else if (i % 13 == 0) data8_c[i] = -64;
-        else if (i % 11 == 0) data8_c[i] = -32;
-        else if (i % 7 == 0) data8_c[i] = 0;
-        else if (i % 5 == 0) data8_c[i] = 32;
-        else if (i % 3 == 0) data8_c[i] = 64;
-        else if (i % 2 == 0) data8_c[i] = 96;
+        data_b[i] = INT16_MIN + i;
+        data_b[DATA_SIZE - 1 - i] = INT16_MIN + i * 2;
+    }
+    for (int i = 0; i < 256; ++i)
+    {
+        data_b[512 - i] = INT16_MAX - i * 255;
+        data_b[512 + i] = INT16_MAX - i * 255;
     }
 
-    int8_t *data8s[3] = { data8_a, data8_b, data8_c };
+    for (int i = 0; i < 1024; ++i)
+    {
+        if (i % 23 == 0) data_c[i] = -128;
+        else if (i % 17 == 0) data_c[i] = -96;
+        else if (i % 13 == 0) data_c[i] = -64;
+        else if (i % 11 == 0) data_c[i] = -32;
+        else if (i % 7 == 0) data_c[i] = 0;
+        else if (i % 5 == 0) data_c[i] = 32;
+        else if (i % 3 == 0) data_c[i] = 64;
+        else if (i % 2 == 0) data_c[i] = 127;
+    }
+
+    int16_t *datas[3] = { data_a, data_b, data_c };
     for (int i = 0; i < 3; ++i)
     {
         size_t result0 = 0;
-        int8_t _min, _max;
-        vec_i8x32n_get_minmax(DATA8_SIZE, data8s[i], &_min, &_max);
+        int16_t _min, _max;
+        vec_i16x16n_get_minmax(DATA_SIZE, datas[i], &_min, &_max);
 
         puts("---- input ----");
-        int unit = DATA8_SIZE / 16;
+        int unit = DATA_SIZE / 16;
         int half_w = 16;
-        for (int k = 0; k < DATA8_SIZE / unit; ++k)
+        for (int k = 0; k < DATA_SIZE / unit; ++k)
         {
             int base = unit * k;
             int _sum = 0;
             for (int n = 0; n < unit; ++n)
             {
-                _sum += data8s[i][base + n];
+                _sum += datas[i][base + n];
             }
             int it = _sum / unit;
             for (int j = -half_w; j <= half_w; ++j)
             {
-                printf("%c", (it / ((INT8_MAX / half_w) + 1) == j ? '*' : j == 0 ? '|' : ' '));
+                printf("%c", (it / ((INT16_MAX / half_w) + 1) == j ? '*' : j == 0 ? '|' : ' '));
             }
             puts("");
         }
 
-        uint8_t histogram[16] = {0,};
-        vec_i8x32n_get_histogram_u8x8(DATA8_SIZE, data8s[i], _min, _max, histogram);
+        int16_t histogram[16] = {0,};
+        vec_i16x16n_get_histogram_i16x8(DATA_SIZE, datas[i], _min, _max, histogram);
 
         printf("%d - %d\n", (int)_min, (int)_max);
         puts("--- output ---");
         for (int i = 0; i < 8; ++i)
         { 
             printf("%.f\t- : %3d|", (float)(_min + (_max - _min) / 8 * i), (int)histogram[i]);
-            for (int j = 0; j < histogram[i] / (256 / 32); ++j) putchar('#');
+            for (int j = 0; j < histogram[i] / (DATA_SIZE / 64); ++j) putchar('#');
             puts("");
         }
-        for (int i = 8; i < sizeof(histogram); ++i)
+        for (int i = 8; i < sizeof(histogram) / sizeof(int16_t); ++i)
         {
             if (histogram[i] != 0)
             {

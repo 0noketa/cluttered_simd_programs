@@ -14,7 +14,7 @@
 
 
 /* local */
-#if 1
+#if 0
 #include <stdio.h>
 static void dump(const char *s, __m256i current)
 {
@@ -689,7 +689,86 @@ size_t vec_i8x32n_count(size_t size, const int8_t *src, int8_t value)
 
 /* hisotgram */
 
-void vec_i8x32n_get_histogram_u8x4(size_t size, const int8_t *src, int8_t _min, int8_t _max, uint8_t *out_bins)
+void vec_i16x16n_get_histogram_i16x8(size_t size, const int16_t *src, int16_t _min, int16_t _max, int16_t *out_bins)
+{
+    int16_t mins0[8];
+    int16_t maxs0[8];
+    {
+        double w = (_max - _min + 1) / 8;
+        for (int i = 0; i < 8; ++i) mins0[i] = _min + w * i;
+        for (int i = 0; i < 7; ++i) maxs0[i] = mins0[i + 1] - 1;
+        maxs0[7] = _max;
+    }
+
+    size_t units = size / 16;
+    const __m256i *p = (const void*)src;
+    __m256i mins = _mm256_set_epi16(
+            mins0[7], mins0[6], mins0[5], mins0[4],  mins0[3], mins0[2], mins0[1], mins0[0],
+            mins0[7], mins0[6], mins0[5], mins0[4],  mins0[3], mins0[2], mins0[1], mins0[0]);
+    __m256i maxs = _mm256_set_epi16(
+            maxs0[7], maxs0[6], maxs0[5], maxs0[4],  maxs0[3], maxs0[2], maxs0[1], maxs0[0],
+            maxs0[7], maxs0[6], maxs0[5], maxs0[4],  maxs0[3], maxs0[2], maxs0[1], maxs0[0]);
+    __m256i results = _mm256_setzero_si256();
+    __m256i ones = _mm256_set1_epi16(1);
+
+    for (int i = 0; i < units; ++i)
+    {
+        __m256i it = p[i];
+
+        __m256i flags = _mm256_cmpgt_epi16(it, mins);
+        __m256i flags3 = _mm256_cmpeq_epi16(it, mins);
+        __m256i flags2 = _mm256_cmpgt_epi16(maxs, it);
+        __m256i flags4 = _mm256_cmpeq_epi16(maxs, it);
+        flags = _mm256_or_si256(flags, flags3);
+        flags2 = _mm256_or_si256(flags2, flags4);
+        flags = _mm256_and_si256(flags, flags2);
+        flags = _mm256_and_si256(flags, ones);
+        results = _mm256_adds_epi16(results, flags);
+
+        mins = _mm256_or_si256(_mm256_slli_si256(mins, 2), _mm256_srli_si256(mins, 14));
+        maxs = _mm256_or_si256(_mm256_slli_si256(maxs, 2), _mm256_srli_si256(maxs, 14));
+        
+        #define count_and_rotate(i) \
+                flags = _mm256_cmpgt_epi16(it, mins);  \
+                flags3 = _mm256_cmpeq_epi16(it, mins);  \
+                flags2 = _mm256_cmpgt_epi16(maxs, it);  \
+                flags4 = _mm256_cmpeq_epi16(maxs, it);  \
+                flags = _mm256_or_si256(flags, flags3);  \
+                flags2 = _mm256_or_si256(flags2, flags4);  \
+                flags = _mm256_and_si256(flags, flags2);  \
+                flags = _mm256_and_si256(flags, ones);  \
+                flags = _mm256_or_si256(_mm256_srli_si256(flags, i * 2), _mm256_slli_si256(flags, 16 - i * 2));  \
+                results = _mm256_adds_epi16(results, flags);  \
+                \
+                mins = _mm256_or_si256(_mm256_slli_si256(mins, 2), _mm256_srli_si256(mins, 14));  \
+                maxs = _mm256_or_si256(_mm256_slli_si256(maxs, 2), _mm256_srli_si256(maxs, 14)); 
+
+        count_and_rotate(1)
+        count_and_rotate(2)
+        count_and_rotate(3)
+        count_and_rotate(4)
+        count_and_rotate(5)
+        count_and_rotate(6)
+        count_and_rotate(7)
+        #undef count_and_rotate
+    }
+
+    __m128i results128 = _mm256_extracti128_si256(results, 0);
+    __m128i results128_2 = _mm256_extracti128_si256(results, 1);
+    results128 = _mm_adds_epi16(results128, results128_2);
+
+    for (int j = 0; j < 4; ++j)
+    {
+        uint32_t results_u32 = _mm_cvtsi128_si32(results128);
+        for (int i = 0; i < 2; ++i)
+        {
+            out_bins[j * 2 + i] = results_u32 & 0xFFFF;
+            results_u32 >>= 16;
+        }
+        results128 = _mm_srli_si128(results128, 4);
+    }
+}
+void vec_i8x32n_get_histogram_i16x4(size_t size, const int8_t *src, int8_t _min, int8_t _max, int16_t *out_bins)
 {
     int8_t mins0[4];
     int8_t maxs0[4];
@@ -723,7 +802,9 @@ void vec_i8x32n_get_histogram_u8x4(size_t size, const int8_t *src, int8_t _min, 
         flags2 = _mm_or_si128(flags2, flags4);
         flags = _mm_and_si128(flags, flags2);
         flags = _mm_and_si128(flags, ones);
-        results = _mm_adds_epi8(results, flags);
+        __m128i zeros = _mm_setzero_si128();
+        results = _mm_adds_epi16(results, _mm_unpackhi_epi8(flags, zeros));
+        results = _mm_adds_epi16(results, _mm_unpacklo_epi8(flags, zeros));
 
         mins = _mm_or_si128(_mm_slli_si128(mins, 1), _mm_srli_si128(mins, 15));
         maxs = _mm_or_si128(_mm_slli_si128(maxs, 1), _mm_srli_si128(maxs, 15));
@@ -738,31 +819,33 @@ void vec_i8x32n_get_histogram_u8x4(size_t size, const int8_t *src, int8_t _min, 
                 flags = _mm_and_si128(flags, flags2);  \
                 flags = _mm_and_si128(flags, ones);  \
                 flags = _mm_or_si128(_mm_srli_si128(flags, i), _mm_slli_si128(flags, 16 - i));  \
-                results = _mm_adds_epi8(results, flags);  \
+                results = _mm_adds_epi16(results, _mm_unpackhi_epi8(flags, zeros));  \
+                results = _mm_adds_epi16(results, _mm_unpacklo_epi8(flags, zeros));  \
                 \
                 mins = _mm_or_si128(_mm_slli_si128(mins, 1), _mm_srli_si128(mins, 15));  \
-                maxs = _mm_or_si128(_mm_slli_si128(maxs, 1), _mm_srli_si128(maxs, 15));  \
+                maxs = _mm_or_si128(_mm_slli_si128(maxs, 1), _mm_srli_si128(maxs, 15)); 
 
         count_and_rotate(1)
         count_and_rotate(2)
         count_and_rotate(3)
-        count_and_rotate(4)
         #undef count_and_rotate
-    }
+     }
 
     __m128i results2 = _mm_srli_si128(results, 8);
     results = _mm_add_epi8(results, results2);
-    results2 = _mm_srli_si128(results, 4);
-    results = _mm_add_epi8(results, results2);
 
-    uint32_t results_u32 = _mm_cvtsi128_si32(results);
-    for (int i = 0; i < 4; ++i)
+    for (int j = 0; j < 2; ++j)
     {
-        out_bins[i] = results_u32 & 0xFF;
-        results_u32 >>= 8;
+        uint32_t results_u32 = _mm_cvtsi128_si32(results);
+        for (int i = 0; i < 2; ++i)
+        {
+            out_bins[j * 2 + i] = results_u32 & 0xFFFF;
+            results_u32 >>= 16;
+        }
+        results = _mm_srli_si128(results, 4);
     }
 }
-void vec_i8x32n_get_histogram_u8x8(size_t size, const int8_t *src, int8_t _min, int8_t _max, uint8_t *out_bins)
+void vec_i8x32n_get_histogram_i16x8(size_t size, const int8_t *src, int8_t _min, int8_t _max, int16_t *out_bins)
 {
     int8_t mins0[8];
     int8_t maxs0[8];
@@ -773,48 +856,55 @@ void vec_i8x32n_get_histogram_u8x8(size_t size, const int8_t *src, int8_t _min, 
         maxs0[7] = _max;
     }
 
-    size_t units = size / 16;
-    const __m128i *p = (const void*)src;
-    __m128i mins = _mm_set_epi8(
+    size_t units = size / 32;
+    const __m256i *p = (const void*)src;
+    __m256i mins = _mm256_set_epi8(
+            mins0[7], mins0[6], mins0[5], mins0[4],  mins0[3], mins0[2], mins0[1], mins0[0],
+            mins0[7], mins0[6], mins0[5], mins0[4],  mins0[3], mins0[2], mins0[1], mins0[0],
             mins0[7], mins0[6], mins0[5], mins0[4],  mins0[3], mins0[2], mins0[1], mins0[0],
             mins0[7], mins0[6], mins0[5], mins0[4],  mins0[3], mins0[2], mins0[1], mins0[0]);
-    __m128i maxs = _mm_set_epi8(
+    __m256i maxs = _mm256_set_epi8(
+            maxs0[7], maxs0[6], maxs0[5], maxs0[4],  maxs0[3], maxs0[2], maxs0[1], maxs0[0],
+            maxs0[7], maxs0[6], maxs0[5], maxs0[4],  maxs0[3], maxs0[2], maxs0[1], maxs0[0],
             maxs0[7], maxs0[6], maxs0[5], maxs0[4],  maxs0[3], maxs0[2], maxs0[1], maxs0[0],
             maxs0[7], maxs0[6], maxs0[5], maxs0[4],  maxs0[3], maxs0[2], maxs0[1], maxs0[0]);
-    __m128i results = _mm_setzero_si128();
-    __m128i ones = _mm_set1_epi8(1);
+    __m256i results = _mm256_setzero_si256();
+    __m256i ones = _mm256_set1_epi8(1);
 
     for (int i = 0; i < units; ++i)
     {
-        __m128i it = p[i];
+        __m256i it = p[i];
 
-        __m128i flags = _mm_cmpgt_epi8(it, mins);
-        __m128i flags3 = _mm_cmpeq_epi8(it, mins);
-        __m128i flags2 = _mm_cmpgt_epi8(maxs, it);
-        __m128i flags4 = _mm_cmpeq_epi8(maxs, it);
-        flags = _mm_or_si128(flags, flags3);
-        flags2 = _mm_or_si128(flags2, flags4);
-        flags = _mm_and_si128(flags, flags2);
-        flags = _mm_and_si128(flags, ones);
-        results = _mm_adds_epi8(results, flags);
+        __m256i flags = _mm256_cmpgt_epi8(it, mins);
+        __m256i flags3 = _mm256_cmpeq_epi8(it, mins);
+        __m256i flags2 = _mm256_cmpgt_epi8(maxs, it);
+        __m256i flags4 = _mm256_cmpeq_epi8(maxs, it);
+        flags = _mm256_or_si256(flags, flags3);
+        flags2 = _mm256_or_si256(flags2, flags4);
+        flags = _mm256_and_si256(flags, flags2);
+        flags = _mm256_and_si256(flags, ones);
+        __m256i zeros = _mm256_setzero_si256();
+        results = _mm256_adds_epi16(results, _mm256_unpackhi_epi8(flags, zeros));
+        results = _mm256_adds_epi16(results, _mm256_unpacklo_epi8(flags, zeros));
 
-        mins = _mm_or_si128(_mm_slli_si128(mins, 1), _mm_srli_si128(mins, 15));
-        maxs = _mm_or_si128(_mm_slli_si128(maxs, 1), _mm_srli_si128(maxs, 15));
-
+        mins = _mm256_or_si256(_mm256_slli_si256(mins, 1), _mm256_srli_si256(mins, 15));
+        maxs = _mm256_or_si256(_mm256_slli_si256(maxs, 1), _mm256_srli_si256(maxs, 15));
+        
         #define count_and_rotate(i) \
-                flags = _mm_cmpgt_epi8(it, mins);  \
-                flags3 = _mm_cmpeq_epi8(it, mins);  \
-                flags2 = _mm_cmpgt_epi8(maxs, it);  \
-                flags4 = _mm_cmpeq_epi8(maxs, it);  \
-                flags = _mm_or_si128(flags, flags3);  \
-                flags2 = _mm_or_si128(flags2, flags4);  \
-                flags = _mm_and_si128(flags, flags2);  \
-                flags = _mm_and_si128(flags, ones);  \
-                flags = _mm_or_si128(_mm_srli_si128(flags, i), _mm_slli_si128(flags, 16 - i));  \
-                results = _mm_adds_epi8(results, flags);  \
+                flags = _mm256_cmpgt_epi8(it, mins);  \
+                flags3 = _mm256_cmpeq_epi8(it, mins);  \
+                flags2 = _mm256_cmpgt_epi8(maxs, it);  \
+                flags4 = _mm256_cmpeq_epi8(maxs, it);  \
+                flags = _mm256_or_si256(flags, flags3);  \
+                flags2 = _mm256_or_si256(flags2, flags4);  \
+                flags = _mm256_and_si256(flags, flags2);  \
+                flags = _mm256_and_si256(flags, ones);  \
+                flags = _mm256_or_si256(_mm256_srli_si256(flags, i), _mm256_slli_si256(flags, 16 - i));  \
+                results = _mm256_adds_epi16(results, _mm256_unpackhi_epi8(flags, zeros));  \
+                results = _mm256_adds_epi16(results, _mm256_unpacklo_epi8(flags, zeros));  \
                 \
-                mins = _mm_or_si128(_mm_slli_si128(mins, 1), _mm_srli_si128(mins, 15));  \
-                maxs = _mm_or_si128(_mm_slli_si128(maxs, 1), _mm_srli_si128(maxs, 15));  \
+                mins = _mm256_or_si256(_mm256_slli_si256(mins, 1), _mm256_srli_si256(mins, 15));  \
+                maxs = _mm256_or_si256(_mm256_slli_si256(maxs, 1), _mm256_srli_si256(maxs, 15));
 
         count_and_rotate(1)
         count_and_rotate(2)
@@ -826,24 +916,19 @@ void vec_i8x32n_get_histogram_u8x8(size_t size, const int8_t *src, int8_t _min, 
         #undef count_and_rotate
     }
 
-    __m128i results2 = _mm_srli_si128(results, 8);
-    results = _mm_add_epi8(results, results2);
+    __m128i results128 = _mm256_extracti128_si256(results, 0);
+    __m128i results128_2 = _mm256_extracti128_si256(results, 1);
+    results128 = _mm_adds_epi16(results128, results128_2);
 
-    uint32_t results_u32 = _mm_cvtsi128_si32(results);
-    for (int i = 0; i < 4; ++i)
+    for (int j = 0; j < 4; ++j)
     {
-        out_bins[i] = results_u32 & 0xFF;
-        results_u32 >>= 8;
-    }
-
-    results = _mm_srli_si128(results, 4);
-    results_u32 = _mm_cvtsi128_si32(results);
-    for (int i = 4; i < 8; ++i)
-    {
-        out_bins[i] = results_u32 & 0xFF;
-        results_u32 >>= 8;
+        uint32_t results_u32 = _mm_cvtsi128_si32(results128);
+        for (int i = 0; i < 2; ++i)
+        {
+            out_bins[j * 2 + i] = results_u32 & 0xFFFF;
+            results_u32 >>= 16;
+        }
+        results128 = _mm_srli_si128(results128, 4);
     }
 }
-void vec_i8x32n_get_histogram_u16x4(size_t size, const int8_t *src, int8_t _min, int8_t _max, uint16_t *out_bins);
-void vec_i8x32n_get_histogram_u16x8(size_t size, const int8_t *src, int8_t _min, int8_t _max, uint16_t *out_bins);
-void vec_i8x32n_get_histogram_u32x4(size_t size, const int8_t *src, int8_t _min, int8_t _max, uint32_t *out_bins);
+void vec_i8x32n_get_histogram_i32x4(size_t size, const int8_t *src, int8_t _min, int8_t _max, int32_t *out_bins);
